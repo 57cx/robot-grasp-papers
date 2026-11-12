@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>阅读计划 · 腿臂抓取论文库</title>
+  <meta name="description" content="四阶段、十二周的腿臂移动操作阅读计划，勾选进度存在本机。">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="alternate" type="application/json" href="site.json" title="site manifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,650;1,6..72,500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="12" fill="#1a2332"/><path d="M8 34h32" stroke="#e7d7c4" stroke-width="1.4"/><path d="M12 27.5 16.5 19h12.5l5 6.5" fill="none" stroke="#f6f1e7" stroke-width="1.8"/><path d="M28.5 19.5 35 12.5l6.5 3" fill="none" stroke="#e7a27a" stroke-width="1.8"/></svg>
+        <span><strong>腿臂抓取论文库</strong><small>GO2 · PiPER · RealSense</small></span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">菜单</button>
+      <nav id="site-nav" class="site-nav" aria-label="主导航">
+        <a href="index.html">总览</a>
+        <a href="library.html">论文库</a>
+        <a href="plan.html" aria-current="page">阅读计划</a>
+        <a href="daily.html">每日前沿</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main">
+    <div class="wrap" id="plan">
+      <div class="page-intro">
+        <noscript><p class="banner">需要启用 JavaScript 才能加载阅读计划。</p></noscript>
+        <p id="status" class="banner" hidden></p>
+        <p class="kicker" id="plan-updated">12 周</p>
+        <h1>阅读计划</h1>
+        <p class="muted">四个阶段接在一条 12 周的时间轴上。勾选存在这台浏览器的 localStorage，不会上传。周次只表示阶段长度，JSON 里没有把论文分到具体某一周。</p>
+      </div>
+      <section class="section" aria-labelledby="timeline-title">
+        <div class="section-head">
+          <h2 id="timeline-title">时间轴</h2>
+          <button type="button" class="btn btn-line" id="reset-progress">清除本机进度</button>
+        </div>
+        <p id="total-progress-label" class="muted">正在统计</p>
+        <div class="progress" aria-hidden="true"><i id="total-progress"></i></div>
+        <div id="timeline" class="weeks"></div>
+      </section>
+      <div id="stages"></div>
+      <section class="section" aria-labelledby="idea-title">
+        <div class="section-head">
+          <div>
+            <p class="kicker">初步想法</p>
+            <h2 id="idea-title">研究设想</h2>
+          </div>
+        </div>
+        <div id="ideas" class="ideas"></div>
+      </section>
+      <section class="section" aria-labelledby="tool-title">
+        <div class="section-head">
+          <div>
+            <p class="kicker">仓库均在计划数据里</p>
+            <h2 id="tool-title">工具链</h2>
+          </div>
+        </div>
+        <div id="tools" class="tools"></div>
+      </section>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap"><p>叙述稿见 <a href="data/reading_plan.md">data/reading_plan.md</a>。结构化字段以 <code>data/reading_plan.json</code> 为准。</p></div>
+  </footer>
+  <script src="assets/common.js"></script>
+  <script src="assets/plan.js"></script>
+</body>
+</html>

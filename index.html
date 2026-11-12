@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>总览 · 腿臂抓取论文库</title>
+  <meta name="description" content="面向 Unitree GO2 EDU、AgileX PiPER / PiPER-X 与 Intel RealSense D435i / D405 的腿臂移动操作与精细抓取论文枢纽。">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="alternate" type="application/json" href="site.json" title="site manifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,650;1,6..72,500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+          <rect width="48" height="48" rx="12" fill="#1a2332"/>
+          <path d="M8 34h32" stroke="#e7d7c4" stroke-width="1.4" opacity=".7"/>
+          <path d="M12 27.5 16.5 19h12.5l5 6.5" fill="none" stroke="#f6f1e7" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M28.5 19.5 35 12.5l6.5 3" fill="none" stroke="#e7a27a" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M14 27.5 12.2 34M19.5 28.2 19 34M30.5 28.4 32.4 34M35.2 26.6 38 34" fill="none" stroke="#f6f1e7" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <span><strong>腿臂抓取论文库</strong><small>GO2 · PiPER · RealSense</small></span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">菜单</button>
+      <nav id="site-nav" class="site-nav" aria-label="主导航">
+        <a href="index.html" aria-current="page">总览</a>
+        <a href="library.html">论文库</a>
+        <a href="plan.html">阅读计划</a>
+        <a href="daily.html">每日前沿</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main">
+    <div class="wrap">
+      <noscript><p class="banner">需要启用 JavaScript 才能加载论文数据。</p></noscript>
+      <p id="status" class="banner" hidden></p>
+      <section class="hero">
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">Legged mobile manipulation</p>
+            <h1>腿臂移动操作与精细抓取</h1>
+            <p class="lede">给一套具体硬件用的论文枢纽：Unitree GO2 EDU，AgileX PiPER / PiPER-X，Intel RealSense D435i / D405。论文事实来自已核对的库，页面只做检索、图表和阅读进度。</p>
+            <div class="hero-actions">
+              <a class="btn btn-primary" href="library.html">进入论文库</a>
+              <a class="btn btn-ghost" href="plan.html">查看 12 周计划</a>
+            </div>
+            <ul class="chips">
+              <li>Unitree GO2 EDU</li>
+              <li>AgileX PiPER</li>
+              <li>PiPER-X</li>
+              <li>RealSense D435i</li>
+              <li>RealSense D405</li>
+            </ul>
+          </div>
+          <div class="hero-figure" aria-hidden="true">
+            <svg viewBox="0 0 440 220" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M24 196 H416" stroke="currentColor" stroke-width="1.4" opacity=".35"/>
+              <path d="M118 146 L102 194 M156 146 L164 194 M248 146 L240 194 M286 146 L308 194" stroke="currentColor" stroke-width="2.2"/>
+              <rect x="108" y="118" width="190" height="34" rx="17" stroke="currentColor" stroke-width="2.2"/>
+              <rect x="286" y="108" width="42" height="30" rx="10" stroke="currentColor" stroke-width="2"/>
+              <path d="M306 108 V92" stroke="currentColor" stroke-width="2"/>
+              <path d="M248 118 V78 H330 L362 96" stroke="#e7a27a" stroke-width="2.6"/>
+              <path d="M350 86 L372 78 M354 104 L376 112" stroke="#e7a27a" stroke-width="2.6"/>
+              <path d="M318 104 L352 78 M318 112 L354 132" stroke="currentColor" stroke-width="1.3" opacity=".5"/>
+            </svg>
+          </div>
+        </div>
+        <div id="stats" class="stat-row" aria-live="polite">
+          <article class="stat"><b>—</b><span>正在统计</span></article>
+        </div>
+      </section>
+      <p id="year-span" class="muted"></p>
+      <p id="progress-note" class="muted"></p>
+
+      <section class="section" aria-labelledby="chart-title">
+        <div class="section-head">
+          <div>
+            <p class="kicker">从库里数出来的</p>
+            <h2 id="chart-title">分布</h2>
+          </div>
+          <p class="muted">点击图表可跳到对应筛选。</p>
+        </div>
+        <div class="chart-grid">
+          <article class="panel">
+            <h3>各类别</h3>
+            <div class="chart-box"><canvas id="chart-category"></canvas></div>
+            <details class="data-table"><summary>数据表</summary><div id="cat-table"></div></details>
+          </article>
+          <article class="panel">
+            <h3>各年份</h3>
+            <div class="chart-box"><canvas id="chart-year"></canvas></div>
+            <details class="data-table"><summary>数据表</summary><div id="year-table"></div></details>
+          </article>
+          <article class="panel">
+            <h3>可复现性</h3>
+            <div class="chart-box"><canvas id="chart-repro"></canvas></div>
+            <details class="data-table"><summary>数据表</summary><div id="repro-table"></div></details>
+          </article>
+          <article class="panel">
+            <h3>代码</h3>
+            <div class="chart-box"><canvas id="chart-code"></canvas></div>
+            <details class="data-table"><summary>数据表</summary><div id="code-table"></div></details>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="top3-title">
+        <div class="section-head">
+          <div>
+            <p class="kicker">阅读计划 top3</p>
+            <h2 id="top3-title">建议先读</h2>
+          </div>
+          <a href="plan.html">整个 12 周</a>
+        </div>
+        <div id="top3" class="top3"></div>
+      </section>
+
+      <section class="section" id="daily-preview" aria-live="polite">
+        <p class="muted">正在查看每日前沿……</p>
+      </section>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>论文条目以 <code>data/papers.json</code> 为准，页面不改写标题、作者、年份或链接。机器可读清单见 <a href="site.json">site.json</a>。</p>
+    </div>
+  </footer>
+  <script src="assets/chart.umd.min.js"></script>
+  <script src="assets/common.js"></script>
+  <script src="assets/home.js"></script>
+</body>
+</html>

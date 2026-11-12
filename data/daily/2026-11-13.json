@@ -1,0 +1,336 @@
+{
+  "date": "2026-11-13",
+  "source_query": "基于 data/arxiv_raw/2026-11-13.json（arXiv API 自动抓取的 81 篇关键词候选，回溯 7 天，窗口 2026-11-06 00:09 至 2026-11-13 00:09 北京时间）人工筛选，按与 GO2 EDU + PiPER/PiPER-X + RealSense D435i/D405 腿臂移动操作与末端精细抓取课题的相关度挑出 12 篇；每篇标题、作者、分类、链接已通过 arXiv API（export.arxiv.org id_list 查询）核对一致。",
+  "overview_zh": "这一周（11 月 6–12 日）的候选以 VLA 为绝对主角，但没有直接落到四足+机械臂上的工作：81 篇的摘要里没有一篇提到四足+机械臂平台（少数四足相关论文做的是运动控制或行人跟踪），腿式移动操作的新进展主要集中在人形机器人上（如 ForPC 在 Unitree G1 上做力感知全身控制）。和 han 最相关的有三条线：一是移动操作里“先选对抓取”，Grasp-TAGS 用 RL critic 蒸馏给抓取打分；二是移动底座停靠位置不固定带来的视角问题，MOMASPLAT（3DGS 新视角示教增强）和 PAIR（用本体感知对齐跨视角表示）都在解决它；三是 VLA 在 AgileX PiPER 上的真机落地，PRISM 和 VLA-MOPD 两篇都直接用了 Piper 机械臂。另外几篇“清醒剂”值得看：kNN 检索在 LIBERO 上就能到 91.7%，抓取可行性预测器在反事实障碍测试下掉到随机水平，相机自动曝光会让“光照实验”失真——提醒自建实验时要设好基线、固定相机参数。",
+  "items": [
+    {
+      "title": "Grasp-TAGS: Task-Aware Grasp Selection via Critic Distillation for Prehensile Loco-Manipulation",
+      "authors": [
+        "Xun Tu",
+        "Minghao Zou",
+        "Karthik Desingh"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.09864",
+      "categories": [
+        "cs.RO",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "summary_zh": "问题：移动操作机器人搬运/重排大物体时，大多数学习方法默认一个固定的初始抓取，但几何上都“抓得稳”的不同抓法，会让后续搬运效果差很多。做法：用 PPO 训练一个覆盖多种初始抓取配置的统一强化学习策略，再把它学到的 critic（价值函数）蒸馏成一个轻量的“抓取效用网络”，只看候选抓取配置和目标信息就能给抓取打分；执行时在接触物体之前就挑出预测效用最高的抓取，再交给下游策略完成任务。",
+      "analysis_zh": "效果：摘要报告平均重排成功率 89.84%，最好的固定单一抓取策略为 79.87%，提升 9.97 个百分点，并且在所有评测物体上都降低了最终朝向误差；也优于随机选抓取。创新点是把“抓哪里”与“抓完之后怎么动”联系起来，用 RL 的 critic 作为抓取评分的监督来源，而不是只看抓取稳定性。局限：摘要面向大物体的目标条件重排，没有说明具体机器人平台和真机细节，精细小物体末端抓取是否适用还需看正文。",
+      "relevance_zh": "对 han 的课题最直接：GO2+PiPER 做腿臂移动操作时，“先选哪个抓取位姿再走/再拉”正是核心问题。思路可以直接借：在 Isaac Gym/Isaac Lab 里对多个候选抓取训练统一策略，再蒸馏 critic 做抓取排序，候选抓取可以来自 D435i/D405 点云上的抓取检测器。复现难度中等：需要自己搭 GO2+PiPER 仿真资产；摘要只给出项目主页（rpm-lab-umn.github.io/Grasp-TAGS-web-page），未提代码是否开源。",
+      "score": 9.0,
+      "priority": "高",
+      "tags": [
+        "腿臂移动操作",
+        "抓取位姿",
+        "强化学习",
+        "critic 蒸馏",
+        "任务感知抓取"
+      ]
+    },
+    {
+      "title": "MOMASPLAT: Dynamic Novel-View Demonstration Augmentation for Mobile Manipulation",
+      "authors": [
+        "Sateesh Kumar",
+        "Arnav Balaji",
+        "Arpit Bahety",
+        "Skand Peri",
+        "Georgios Pavlakos",
+        "Roberto Martín-Martín"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.08372",
+      "categories": [
+        "cs.RO",
+        "cs.AI",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：模仿学习得到的视觉运动策略对相机视角非常敏感；移动操作中由于导航误差、定位漂移，机器人很少能停在采集示教时的同一底座位姿。已有新视角合成增强假设场景静止，无法重渲染被操作物体在接触后的运动。做法：MOMASPLAT 利用移动操作采集时天然带来的多视角观测，分别重建静态场景和被操作物体（3D Gaussian Splatting + 前馈式 3D 基础模型），从新底座位姿渲染整段操作轨迹，并用基于运动学的动作重定向生成配套的变换后动作。",
+      "analysis_zh": "效果：在 3 个场景、5 个真实移动操作任务（含刚体和铰接物体）上评测，对未见底座位姿的鲁棒性显著提升，平均成功率是最强基线的两倍以上，在所有基线都失败的大底座偏移下仍保持一定成功率，同时减少大规模真机数据采集需求；仿真中也验证了合成示教与真值的一致性。创新是把动态物体也纳入新视角增强。局限：依赖 3DGS 重建质量和运动学重定向，摘要未给出底座平台型号和代码信息。",
+      "relevance_zh": "GO2 走到目标附近再用 PiPER 抓，停靠位姿每次都不一样，这正是 MOMASPLAT 要解决的痛点。可以用 D435i（底座/头部）和 D405（腕部）采集的多视角 RGB-D 做 3DGS 重建，扩增少量遥操作示教。复现门槛中高：需要 3DGS 管线和 GO2+PiPER 的运动学重定向；代码是否公开摘要未说明。适合作为“少量示教 + 停靠位姿泛化”的数据增强方案。",
+      "score": 8.8,
+      "priority": "高",
+      "tags": [
+        "移动操作",
+        "模仿学习",
+        "数据增强",
+        "3D Gaussian Splatting",
+        "视角鲁棒"
+      ]
+    },
+    {
+      "title": "PRISM: Primitive Routing via In-context Skill Mixing for Retentive VLA Adaptation",
+      "authors": [
+        "Jiachen Tao",
+        "Gengyu Zhang",
+        "Haoxuan Wang",
+        "Bing Liu",
+        "Yan Yan"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.08917",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：VLA 部署时既要保留已学技能，又要在长程复合任务里按阶段调用不同技能；常规做法把每个新任务都塞进一次共享更新，没有“技能存在哪里、何时调用”的结构。做法：作者发现预训练 VLA 的每技能 LoRA 更新落在一个可区分的低维子空间里。PRISM 为每个技能族存一个专用低秩 action-expert 适配器（原语库），加技能特定的低秩残差，推理时由一个读取前缀表示、按 chunk 工作的 VLM 条件路由器组合原语；复合训练时冻结所有原语以保证不遗忘。",
+      "analysis_zh": "效果：RoboCasa365 上原子技能成功率 56.43%、长程复合任务 20.00%；标准 π0.5-LoRA 两阶段微调分别为 17.86% 和 17.50%。并在 AgileX PIPER 真机上做了验证。创新在于把技能做成参数级原语+路由，兼顾保留与组合。局限：复合任务绝对成功率仍较低（20%），路由器监督依赖一个由动作推导的确定性 oracle 标签。",
+      "relevance_zh": "摘要明确用了 AgileX PIPER 真机，与 han 的 PiPER 机械臂同款，迁移成本低。如果 han 计划用 π0.5 类 VLA 在 PiPER 上做“抓取—放置—开抽屉”这类多技能组合，PRISM 的“每技能 LoRA + 路由”是现成的设计参考。复现难度中等：需要 π0.5 微调算力；代码是否开源摘要未说明。",
+      "score": 8.3,
+      "priority": "高",
+      "tags": [
+        "VLA",
+        "PiPER",
+        "LoRA",
+        "技能组合",
+        "持续学习"
+      ]
+    },
+    {
+      "title": "VLA-MOPD: On-Policy Distillation for Multi-Task VLA Policy Consolidation",
+      "authors": [
+        "Yongxuan Lv",
+        "Zhen Fang",
+        "Lichen Man",
+        "Hao Li",
+        "Pu Li",
+        "Hengyi Wang",
+        "Langfeng Cao",
+        "Lin Chen",
+        "Jie Huang",
+        "Xiu Su",
+        "Shan You",
+        "Fei Wang",
+        "Feng Zhao"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.12286",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：针对不同任务单独后训练的 VLA 会变成一堆“专家”，难以合并成一个策略；混合任务 RL 信用分配稀疏，离线蒸馏又覆盖不到学生自己会访问的状态。做法：VLA-MOPD 是面向 flow-matching VLA 的多教师在线蒸馏协议：学生策略自己在机器人上 rollout，在每个访问到的观测和中间 ODE 状态上询问按指令路由的冻结教师，用逐 flow 步的转移目标做掩码局部匹配损失，并可加参考策略项保持其他任务能力。",
+      "analysis_zh": "效果：LIBERO 上每任务仅一条轨迹起步，mean success-once 从 75.4% 提升到 98.9%（端点动作蒸馏为 98.15%）；RoboTwin 2.0 平均成功率从 73.0% 到 89.3%；在 Piper 机器人上两轮合并把平均成功率从 70.0% 提升到 90.0%；参考匹配项把 Object 套件的下降限制在 3.0 个点（无该项为 13.2）。创新是对中间去噪/ODE 状态做在线监督。局限：需要先有各任务专家，且依赖 flow-matching 结构。",
+      "relevance_zh": "同样在 Piper 机械臂上有真机结果，对 han 很实用：先在 PiPER 上为“抓瓶子”“抓小零件”等分别微调专家，再用该方法合并成一个多任务策略，避免维护多个模型。复现难度中等偏高：需要 flow-matching VLA（如 π0 系列）训练环境和真机在线 rollout；代码情况摘要未提。",
+      "score": 8.0,
+      "priority": "高",
+      "tags": [
+        "VLA",
+        "PiPER",
+        "策略蒸馏",
+        "多任务",
+        "flow matching"
+      ]
+    },
+    {
+      "title": "PAIR: Proprioception-Aligned Image-Ray Representations for Viewpoint-Robust Manipulation",
+      "authors": [
+        "Sung-Wook Lee",
+        "Xuhui Kang",
+        "Dylan Losey",
+        "Yen-Ling Kuo"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.11798",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：视觉运动策略对相机视角变化不鲁棒：同一状态在不同视角下看起来差别很大。只把相机射线作为额外输入，或只做几何对齐，都不够。做法：PAIR 是一个对比学习框架，用机器人本体感知（关节状态）对齐“图像+相机射线”的联合表示，让机器人状态相近的观测在不同视角下表示也相近。可用于训练 Diffusion Policy，也可用于 VLA 后训练。",
+      "analysis_zh": "效果：在带相机变化的仿真和真机操作基准上，分别比不带射线条件的行为克隆基线高 12.7 和 26.7 个百分点，对未见视角泛化更好。创新是把本体感知当作跨视角的“锚”。局限：摘要未说明需要多少视角的训练数据，以及对腕部相机这类随动视角的效果。",
+      "relevance_zh": "GO2 底座晃动、停靠位置不一导致 D435i 视角持续变化，PAIR 这种“视角无关表征”很对口；它不需要新传感器，只需 PiPER 关节角+相机内外参（意味着手眼/相机标定要做好）。可与 Diffusion Policy 直接结合，复现难度中等；项目主页 PAIRrobot.github.io，代码情况摘要未说明。",
+      "score": 7.6,
+      "priority": "高",
+      "tags": [
+        "视角鲁棒",
+        "Diffusion Policy",
+        "VLA",
+        "表征学习",
+        "相机标定"
+      ]
+    },
+    {
+      "title": "Control-Aware Command Generation for Asynchronous Control and Action Inference with Vision-Based Policies towards Fast Execution",
+      "authors": [
+        "Takayuki Osa",
+        "Kazuki Ota"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.11089",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：VLA 等视觉策略推理开销大，执行速度受限。作者只在控制层面动手，不改策略学习。做法：提出异步推理与控制框架，把“从断续的模型预测生成连续目标位置”建模成跟踪控制问题，保证动作平滑稳定；再根据预测位置的方差做自适应动作跳过，进一步加速。",
+      "analysis_zh": "效果：在双臂机器人上用 ACT 和 OpenVLA-OFT 实验，执行显著加速且保持较高任务成功率（摘要未给具体数字）。创新是无需重训策略、纯控制层改进，工程上很实用。局限：摘要未量化加速倍数，也未讨论接触丰富或需要力控的任务。",
+      "relevance_zh": "han 在 GO2 EDU 机载算力或外接 GPU 上跑 ACT/VLA 控制 PiPER 时，推理延迟是一定会遇到的问题。这篇的思路（异步推理 + 跟踪控制平滑 + 按方差跳步）可以直接套在 PiPER 的 ROS2/SDK 位置控制接口上，不需要重新训练，复现门槛低。",
+      "score": 7.2,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "异步推理",
+        "控制",
+        "ACT",
+        "实时性"
+      ]
+    },
+    {
+      "title": "Task-Critical Part Alignment Improves Imitation of Object Interactions",
+      "authors": [
+        "Denis Hadjivelichkov",
+        "Sebastian Ægidius",
+        "Valerio Modugno",
+        "Dimitrios Kanoulas"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.10664",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：DINOBot 这类基于视觉特征对齐的模仿学习，在真实深度噪声和错误特征匹配下对齐不准。做法：两点改进——在对齐阶段引入 RANSAC 剔除外点，减弱深度噪声和错误匹配影响；把语义对应集中在任务相关的交互部位，让表示优先关注决定操作成败的物体关键部分。",
+      "analysis_zh": "效果：在抓取、插入、摇晃、倾倒等真实任务上，总体任务成功率比基线提升 13.8%，对齐收敛更快。属于对已有框架的工程增强，思路清楚。局限：摘要没有说明机器人平台和相机型号，提升主要来自对齐模块，对长程或移动场景未涉及。",
+      "relevance_zh": "对 han 的末端精细抓取很实用：PiPER 腕部装 D405（近距离深度质量较好），用 DINO 特征 + RANSAC 做“少样本对齐后执行示教”，是低门槛的精细抓取/插入方案，计算量小，单臂即可先跑通，再搬到 GO2 上。复现难度低到中；代码情况摘要未提。",
+      "score": 7.0,
+      "priority": "中",
+      "tags": [
+        "模仿学习",
+        "DINOBot",
+        "RANSAC",
+        "精细操作",
+        "插入"
+      ]
+    },
+    {
+      "title": "Auditing Grasp Feasibility Predictors with Planner-Verified Counterfactuals",
+      "authors": [
+        "Sajid Ansari",
+        "Antony Thomas",
+        "Girish Varma"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.09130",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：抓取可行性预测器在 TAMP 基准上准确率接近完美，但这不代表它真正利用了运动规划器检查的碰撞几何。做法：提出“规划器验证的反事实测试”：固定抓取位姿，在接近通道里插入实体障碍物、把障碍点加进模型输入，由规划器重新给标签（从可行变为不可行）。",
+      "analysis_zh": "效果：8 个预测器（点云、体素、深度、物体 token）的反事实对 AUROC 从自然情况的 0.920–0.996 跌到 0.470–0.504（接近随机），且在 4 个规划器、2 种机械臂和真实障碍物上都成立；一个关注通道间隙的读出方法达到 0.983，但仍依赖训练时的障碍位置。数据与流程开源于 github.com/codewithsajid/graspfc-cf。价值在于提醒“高准确率≠学会了碰撞”。局限：是诊断工作，不直接给出可泛化的解决方案。",
+      "relevance_zh": "han 用 D435i/D405 点云做抓取检测时，杂乱场景里的“接近路径被挡”是常见失败源。这篇提供了现成的反事实评测流程，可以用来检验自己的抓取网络是否真的看到了障碍；也提示在 PiPER 上部署时仍要让运动规划（如 MoveIt）做最后的碰撞把关。复现难度低（有开源代码）。",
+      "score": 6.6,
+      "priority": "中",
+      "tags": [
+        "抓取位姿",
+        "抓取可行性",
+        "评测",
+        "碰撞检测",
+        "开源"
+      ]
+    },
+    {
+      "title": "Camera equalisation of an 11.5x drop in environmental illuminance: four imitation-learning policies on an SO-101 arm",
+      "authors": [
+        "Simon Cowling"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.13810",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：真机基准常用“房间照度（lux）”描述光照条件，但这未必代表策略真正看到的图像亮度。做法：在 SO-101 机械臂上用同样 50 条示教训练 ACT、SmolVLA、Diffusion Policy、π0.5 四种策略，分别在约 520 lux 和约 45 lux（降 11.5 倍）下各跑 10 次。",
+      "analysis_zh": "效果：正常光 20/40，低光 19/40，差异 -2.5 个百分点（95% CI -23 到 +19），四种策略敏感度无差异（交互 p=0.86）。原因是相机开着自动曝光和白平衡，前置相机图像平均亮度只降 3%，腕部相机降 19%。结论：应报告并控制相机设置与图像统计，而不是 lux。数据和代码公开。局限：样本量小（每条件 10 次），曝光未锁定。",
+      "relevance_zh": "非常贴近 han 的低成本实验实践：RealSense D435i/D405 默认也开自动曝光。做数据采集和评测时应记录/固定曝光与白平衡，并比较训练与测试图像统计，否则光照实验结论不可靠。复现门槛很低，属于“实验规范”类必读短文。",
+      "score": 6.4,
+      "priority": "中",
+      "tags": [
+        "实验方法",
+        "模仿学习",
+        "相机设置",
+        "ACT",
+        "Diffusion Policy"
+      ]
+    },
+    {
+      "title": "How Much of Your VLA Is kNN",
+      "authors": [
+        "Denis Grachev",
+        "Damien LaRocque",
+        "Omar Moured"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.13160",
+      "categories": [
+        "cs.RO",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "summary_zh": "问题：VLA 在 LIBERO 上成功率已超过 95%，但其中有多少真正需要超出示教的泛化？做法：直接检索最近的示教并复用其动作 chunk，无需训练策略；对 9 个公开 VLA 分析微调到底改变了什么；提出离线指标 Local Action Consistency（LAC），衡量表示空间中相近观测是否对应相似的未来动作。",
+      "analysis_zh": "效果：纯检索在 LIBERO 上达到 91.7% 成功率，在 LIBERO-Plus 扰动下下降最小；微调主要让视觉-语言主干成为更好的“检索键”，VLA 的动作仍接近示教。LAC 能追踪检索成功率并指导检索键训练。代码在 github.com/sereact/lerobot_knn。局限：结论主要基于 LIBERO 仿真基准。",
+      "relevance_zh": "给 han 一个很好的基线和“照妖镜”：在 PiPER 上评估自己的 VLA/模仿学习策略前，先跑一个 kNN 检索基线，判断策略是否只是在背示教。代码基于 LeRobot，复现门槛低（注意 LeRobot 需社区插件支持 PiPER）。",
+      "score": 6.0,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "基线",
+        "kNN",
+        "LeRobot",
+        "评测"
+      ]
+    },
+    {
+      "title": "ForPC: Force-Aware Whole-Body Control for Precise Humanoid Cart Pushing",
+      "authors": [
+        "ZhenYu Zou",
+        "Xing Liu",
+        "ShiChuang Wang",
+        "YunLong Dong",
+        "LiNan Deng",
+        "Feng Hua",
+        "Jun Wan",
+        "Cheng Cheng"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.08664",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：人形机器人推小车时，双手抓握形成力耦合闭环，推车的接触力反过来扰动平衡，载重变化还会改变耦合动力学。做法：ForPC 两阶段强化学习：先在不同手部负载和上身姿态下训练行走先验保证平衡；再从机载观测推断力隐变量和状态隐变量（不用外部力传感器），输入残差策略协调手臂、腰部、腿部调整与底座速度指令；多目标奖励惩罚双手内耗、抓握打滑和执行器饱和。",
+      "analysis_zh": "效果：sim-to-sim 中小车速度 RMSE 相对仅行走基线最多降 68.2%，多弯路线横向 RMSE 最多降 74.2%；纯仿真训练直接迁移到 Unitree G1 真机，不做载重专门调整即可推动载重最多 30 kg 的小车，速度 0.5 m/s。创新是无力传感器的力感知全身控制。局限：平台是人形，任务是推车而非精细抓取。",
+      "relevance_zh": "虽然是人形，但“行走先验 + 残差全身策略 + 从本体感知推断外力”的结构可以直接迁移到 GO2+PiPER：PiPER 拉门、拖物时的反作用力同样会扰动 GO2 平衡，而 GO2 和 PiPER 都没有末端力传感器。复现难度中高：需要自己在仿真里搭腿臂一体模型并训练两阶段 RL。",
+      "score": 5.8,
+      "priority": "中",
+      "tags": [
+        "全身控制",
+        "力感知",
+        "sim2real",
+        "强化学习",
+        "Unitree"
+      ]
+    },
+    {
+      "title": "ODEAction: From Predicting Chunks to Evolving Actions",
+      "authors": [
+        "Qishen Wang",
+        "Pengxiang Ding",
+        "Shifeng Bao",
+        "Mingyang Sun",
+        "Hengtao Li",
+        "Yi Gao",
+        "Baohua Yin",
+        "Yang Liu",
+        "Jiajun Fu",
+        "Jiacheng Liu",
+        "Changjing He",
+        "Peiyang Li",
+        "Runze Suo",
+        "Yan Wang",
+        "Xiaobo Wang",
+        "Yonghao Dang",
+        "Cheng Chi"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.09672",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：VLA 通常按块（chunk）生成动作，块与块之间可能不连续。做法：ODEAction 用常微分方程描述动作的连续演化，学习一个“动作转移场”作为 ODE 向量场；推理时以当前动作为初值数值求解，递归生成后续动作，作为可接入不同视觉-语言主干的模块化动作头。",
+      "analysis_zh": "效果：在 LIBERO、EBench、RoboTwin 和真机任务上，相比基于 chunk 的基线，任务表现和轨迹质量都有提升，在精细操作任务上提升尤其明显（摘要未给具体数字）。创新是用无 chunk 的连续动作演化替代动作分块。局限：摘要未说明推理开销和真机平台。",
+      "relevance_zh": "han 关注末端精细抓取，块边界抖动在 PiPER 精细对位时会直接体现为末端抖动。可作为 VLA 动作头的备选方案阅读；工程上实现门槛中等，代码情况摘要未提。",
+      "score": 5.5,
+      "priority": "低",
+      "tags": [
+        "VLA",
+        "动作生成",
+        "精细操作",
+        "ODE",
+        "轨迹平滑"
+      ]
+    }
+  ]
+}

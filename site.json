@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "id": "robot-grasp-papers",
+  "title": "腿臂移动操作与精细抓取论文库",
+  "description": "面向 Unitree GO2 EDU、AgileX PiPER / PiPER-X 与 Intel RealSense D435i / D405 的腿臂移动操作与精细抓取论文枢纽。收录已核对论文、12 周阅读计划和每日 arXiv 候选。",
+  "language": "zh-CN",
+  "url": "https://57cx.github.io/robot-grasp-papers/",
+  "base_path": "/robot-grasp-papers/",
+  "updated": "2026-11-13T00:09:57+08:00",
+  "sections": [
+    {
+      "id": "overview",
+      "title": "总览",
+      "path": "index.html"
+    },
+    {
+      "id": "library",
+      "title": "论文库",
+      "path": "library.html"
+    },
+    {
+      "id": "plan",
+      "title": "阅读计划",
+      "path": "plan.html"
+    },
+    {
+      "id": "daily",
+      "title": "每日前沿",
+      "path": "daily.html"
+    }
+  ],
+  "data": {
+    "papers": "data/papers.json",
+    "reading_plan": "data/reading_plan.json",
+    "reading_plan_markdown": "data/reading_plan.md",
+    "daily_index": "data/daily/index.json",
+    "daily_digest": "data/daily/YYYY-MM-DD.json",
+    "daily_digest_schema": "data/daily/digest.schema.json",
+    "arxiv_raw_index": "data/arxiv_raw/index.json",
+    "arxiv_raw": "data/arxiv_raw/YYYY-MM-DD.json",
+    "arxiv_raw_schema": "data/arxiv_raw/raw.schema.json"
+  },
+  "counts": {
+    "papers": 145
+  },
+  "latest_digest": null,
+  "latest_arxiv_raw": "2026-11-13",
+  "hardware": [
+    "Unitree GO2 EDU",
+    "AgileX PiPER",
+    "AgileX PiPER-X",
+    "Intel RealSense D435i",
+    "Intel RealSense D405"
+  ]
+}

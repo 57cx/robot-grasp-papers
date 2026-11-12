@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>每日前沿 · 腿臂抓取论文库</title>
+  <meta name="description" content="腿臂移动操作与精细抓取的每日解读，以及未经解读的 arXiv 候选。">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="alternate" type="application/json" href="site.json" title="site manifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,650;1,6..72,500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="12" fill="#1a2332"/><path d="M8 34h32" stroke="#e7d7c4" stroke-width="1.4"/><path d="M12 27.5 16.5 19h12.5l5 6.5" fill="none" stroke="#f6f1e7" stroke-width="1.8"/><path d="M28.5 19.5 35 12.5l6.5 3" fill="none" stroke="#e7a27a" stroke-width="1.8"/></svg>
+        <span><strong>腿臂抓取论文库</strong><small>GO2 · PiPER · RealSense</small></span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">菜单</button>
+      <nav id="site-nav" class="site-nav" aria-label="主导航">
+        <a href="index.html">总览</a>
+        <a href="library.html">论文库</a>
+        <a href="plan.html">阅读计划</a>
+        <a href="daily.html" aria-current="page">每日前沿</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main">
+    <div class="wrap page-intro">
+      <noscript><p class="banner">需要启用 JavaScript 才能加载每日前沿。</p></noscript>
+      <p id="status" class="banner" hidden></p>
+      <p class="kicker">解读与候选分开存放</p>
+      <h1>每日前沿</h1>
+      <p class="muted">有解读时按日期列出 <code>data/daily/</code>。某一天还没有解读、但自动抓取已经写入候选时，那些条目会标成新论文候选。没有文件时这里保持空白，不会放示例论文。</p>
+    </div>
+    <div class="wrap daily-layout">
+      <aside id="archive" class="archive" hidden aria-label="日期档案"></aside>
+      <div id="daily-main" aria-live="polite"><p class="muted">正在读取索引……</p></div>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap"><p>解读格式见 <a href="data/daily/digest.schema.json">digest.schema.json</a>。候选格式见 <a href="data/arxiv_raw/raw.schema.json">raw.schema.json</a>。</p></div>
+  </footer>
+  <script src="assets/common.js"></script>
+  <script src="assets/daily.js"></script>
+</body>
+</html>

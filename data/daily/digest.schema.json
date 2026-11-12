@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://57cx.github.io/robot-grasp-papers/data/daily/digest.schema.json",
+  "title": "DailyDigest",
+  "description": "人工解读的每日前沿。不要写入虚构论文。items 只收录当天实际核对过的文献。",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["date", "source_query", "overview_zh", "items"],
+  "properties": {
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "北京时间日历日，与文件名 data/daily/YYYY-MM-DD.json 一致。"
+    },
+    "source_query": {
+      "type": "string",
+      "minLength": 1,
+      "description": "当天解读所依据的检索式、arXiv 候选文件或人工筛选说明。"
+    },
+    "overview_zh": {
+      "type": "string",
+      "description": "当日总述。没有可写的真实观察时用空字符串，不要编造趋势。"
+    },
+    "items": {
+      "type": "array",
+      "description": "当天解读条目。没有论文时为空数组。",
+      "items": { "$ref": "#/$defs/item" }
+    }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "title",
+        "authors",
+        "arxiv_url",
+        "categories",
+        "summary_zh",
+        "analysis_zh",
+        "relevance_zh",
+        "score",
+        "priority",
+        "tags"
+      ],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "authors": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "arxiv_url": {
+          "type": "string",
+          "description": "arXiv 摘要页绝对 URL。非 arXiv 论文可留空字符串并在 analysis_zh 里说明出处。"
+        },
+        "categories": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "arXiv 分类，如 cs.RO。"
+        },
+        "summary_zh": { "type": "string", "description": "中文摘要：问题、方法、结果。只写论文里有的内容。" },
+        "analysis_zh": { "type": "string", "description": "中文分析：方法位置、局限、和相邻工作的关系。" },
+        "relevance_zh": { "type": "string", "description": "和 GO2 EDU + PiPER/PiPER-X + D435i/D405 的关系。" },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "相关度评分，0–10。越高越值得今天读。"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["高", "中", "低"]
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

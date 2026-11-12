@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>论文库 · 腿臂抓取论文库</title>
+  <meta name="description" content="可检索、可筛选的腿臂移动操作与精细抓取论文库。">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="alternate" type="application/json" href="site.json" title="site manifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,650;1,6..72,500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="12" fill="#1a2332"/><path d="M8 34h32" stroke="#e7d7c4" stroke-width="1.4"/><path d="M12 27.5 16.5 19h12.5l5 6.5" fill="none" stroke="#f6f1e7" stroke-width="1.8"/><path d="M28.5 19.5 35 12.5l6.5 3" fill="none" stroke="#e7a27a" stroke-width="1.8"/></svg>
+        <span><strong>腿臂抓取论文库</strong><small>GO2 · PiPER · RealSense</small></span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">菜单</button>
+      <nav id="site-nav" class="site-nav" aria-label="主导航">
+        <a href="index.html">总览</a>
+        <a href="library.html" aria-current="page">论文库</a>
+        <a href="plan.html">阅读计划</a>
+        <a href="daily.html">每日前沿</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main">
+    <div class="wrap page-intro">
+      <noscript><p class="banner">需要启用 JavaScript 才能加载论文数据。</p></noscript>
+      <p id="status" class="banner" hidden></p>
+      <p class="kicker">145 篇已核对文献</p>
+      <h1>论文库</h1>
+      <p class="muted">按类别、年份、标签、可复现性和是否有代码筛选。展开后看中文摘要、与 GO2 / PiPER / RealSense 的关系，以及 arXiv、DOI、代码链接。</p>
+    </div>
+    <div class="toolbar">
+      <div class="wrap">
+        <form class="filters" id="filters" action="library.html" role="search">
+          <label class="field">检索
+            <input id="filter-q" type="search" name="q" placeholder="标题、作者、标签、摘要" autocomplete="off">
+          </label>
+          <label class="field">类别
+            <select id="filter-category" name="category"><option value="">全部类别</option></select>
+          </label>
+          <label class="field">年份
+            <select id="filter-year" name="year"><option value="">全部年份</option></select>
+          </label>
+          <label class="field">标签
+            <select id="filter-tag" name="tag"><option value="">全部标签</option></select>
+          </label>
+          <label class="field">可复现性
+            <select id="filter-repro" name="repro">
+              <option value="">全部</option>
+              <option value="高">高</option>
+              <option value="中">中</option>
+              <option value="低">低</option>
+            </select>
+          </label>
+          <label class="field">代码
+            <select id="filter-code" name="code">
+              <option value="">全部</option>
+              <option value="1">有代码</option>
+              <option value="0">无代码</option>
+            </select>
+          </label>
+        </form>
+        <div class="toolbar-row">
+          <p id="result-count" class="muted">正在加载……</p>
+          <div class="view-toggle">
+            <label class="field">排序
+              <select id="filter-sort">
+                <option value="year-desc">年份新到旧</option>
+                <option value="year-asc">年份旧到新</option>
+                <option value="repro">可复现性</option>
+                <option value="title">标题</option>
+              </select>
+            </label>
+            <button type="button" class="btn btn-line" data-view="card" aria-pressed="true">卡片</button>
+            <button type="button" class="btn btn-line" data-view="table" aria-pressed="false">表格</button>
+            <button type="button" class="btn btn-line" id="clear-filters">清除筛选</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wrap" id="library">
+      <section class="section" aria-labelledby="map-title">
+        <div class="section-head">
+          <div>
+            <p class="kicker">类别面积 = 篇数</p>
+            <h2 id="map-title">类别与标签</h2>
+          </div>
+        </div>
+        <div class="treemap-layout">
+          <div class="panel"><div id="treemap" class="treemap" role="group" aria-label="类别树图"></div></div>
+          <div class="panel">
+            <h3 id="tag-caption">标签</h3>
+            <div id="tag-cloud" class="tag-cloud"></div>
+          </div>
+        </div>
+      </section>
+      <section id="results" class="section" aria-live="polite"></section>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap"><p>可复现性表示在 GO2 + PiPER + RealSense 上复现的难易，定义见 README。按 <kbd>/</kbd> 聚焦检索。</p></div>
+  </footer>
+  <script src="assets/common.js"></script>
+  <script src="assets/treemap.js"></script>
+  <script src="assets/library.js"></script>
+</body>
+</html>

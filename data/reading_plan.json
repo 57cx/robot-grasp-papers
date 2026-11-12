@@ -1,0 +1,262 @@
+{
+ "title": "GO2 + PiPER + RealSense 腿臂移动操作与精细抓取：分阶段阅读计划",
+ "updated": "2026-11-12",
+ "papers_file": "papers.json",
+ "total_weeks": 12,
+ "stages": [
+  {
+   "stage": 1,
+   "name": "入门：综述 + 同构硬件系统 + 工具链跑通",
+   "weeks": 2,
+   "goal": "建立腿臂移动操作的整体地图；读懂与你硬件几乎同构的系统论文；把 GO2 / PiPER / RealSense 的 SDK 全部跑通。",
+   "first_read": [
+    "langella2026locopilot",
+    "ha2024umionlegs",
+    "rahman2026locomanip_review"
+   ],
+   "core": [
+    "langella2026locopilot",
+    "minelli2026tabletop",
+    "ha2024umionlegs",
+    "rahman2026locomanip_review",
+    "ha2024learning",
+    "fu2022deep",
+    "ma2022combining"
+   ],
+   "optional": [
+    "liu2024ok",
+    "firoozi2023foundation",
+    "lemke2024spot",
+    "wu2024helpful"
+   ],
+   "practice": "piper_sdk 读写关节/夹爪；piper_ros(humble 分支)+MoveIt 规划；unitree_sdk2 让 GO2 调整站姿/身高；realsense-ros 同时出 D435i 与 D405 点云；跑通 LeRobot+PiPER 插件录一条示教。"
+  },
+  {
+   "stage": 2,
+   "name": "腿臂全身控制（RL / MPC / 混合）与 sim2real",
+   "weeks": 3,
+   "goal": "掌握统一策略 vs 分层策略、教师-学生蒸馏、RL+模型混合；能在 Isaac Gym/Lab 中训练 GO2+PiPER 的末端位姿跟踪策略。",
+   "first_read": [
+    "pan2024roboduet",
+    "liu2024visual",
+    "liu2025mlm"
+   ],
+   "core": [
+    "rudin2021learning",
+    "kumar2021rma",
+    "margolis2022walk",
+    "pan2024roboduet",
+    "liu2024visual",
+    "liu2025mlm",
+    "cheng2025rambo",
+    "wang2024quadwbg"
+   ],
+   "optional": [
+    "sambhus2025nonlinear",
+    "long2023hybrid",
+    "sleiman2021unified",
+    "portela2024learning",
+    "sleiman2023versatile",
+    "mittal2023orbit",
+    "tobin2017domain"
+   ],
+   "practice": "用 RoboDuet 或 legged_gym 代码，把 PiPER URDF 装到 GO2 上，训练 6D 末端跟踪策略，记录末端跟踪误差曲线。"
+  },
+  {
+   "stage": 3,
+   "name": "抓取感知、手眼标定/视觉伺服、力控与模仿学习",
+   "weeks": 4,
+   "goal": "能用 D435i/D405 做 6-DoF 抓取检测并完成手眼标定；理解柔顺控制；在 PiPER 上训练 ACT/DP/DP3。",
+   "first_read": [
+    "graspnet1b",
+    "fang2022anygrasp",
+    "zhao2023act"
+   ],
+   "core": [
+    "graspnet1b",
+    "fang2022anygrasp",
+    "murali2025graspgen",
+    "shi2024asgrasp",
+    "tsai1989handeye",
+    "chaumette2006vs",
+    "zhao2023act",
+    "chi2023diffusion",
+    "ze2024dp3",
+    "chi2024umi",
+    "hou2024adaptive"
+   ],
+   "optional": [
+    "sundermeyer2021contact",
+    "chen2023easyhec",
+    "chen2023cns",
+    "wen2023foundationpose",
+    "morrison2018closing",
+    "hogan1985impedance",
+    "portela2024learning",
+    "luo2024precise",
+    "lin2024data",
+    "prasad2024consistency",
+    "ze2024generalizable",
+    "newbury2022deep"
+   ],
+   "practice": "眼在手上（D405）与眼在手外（D435i）各标一次并量化重投影/抓取误差；AnyGrasp vs Contact-GraspNet vs GraspGen 在同一批物体上对比；LeRobot 录 50 条示教训练 ACT 与 DP。"
+  },
+  {
+   "stage": 4,
+   "name": "VLA / 基础模型与前沿",
+   "weeks": 3,
+   "goal": "能在 LeRobot/openpi 中微调 VLA 到 PiPER（先固定底盘，再上 GO2）；跟进腿臂+触觉/VLA 最新工作。",
+   "first_read": [
+    "black2024pi0",
+    "shukor2025smolvla",
+    "kim2025openvlaoft"
+   ],
+   "core": [
+    "kim2024openvla",
+    "kim2025openvlaoft",
+    "black2024pi0",
+    "pi2025pi05",
+    "shukor2025smolvla",
+    "cadene2026lerobot",
+    "huang2024rekep",
+    "hu2026tac"
+   ],
+   "optional": [
+    "octo2024",
+    "oxe2023openx",
+    "liu2023libero",
+    "ma2024survey",
+    "pertsch2025fast",
+    "liu2024rdt",
+    "qiu2024wildlma",
+    "niu2025human2locoman"
+   ],
+   "practice": "先在 LIBERO 上复现 OpenVLA-OFT / pi0 微调流程，再用自采 PiPER 数据微调 SmolVLA 与 pi0，最后按 Tabletop-to-Walking-Bot 的设置上 GO2。"
+  }
+ ],
+ "research_ideas": [
+  {
+   "title": "粗到精的腿臂移动抓取：全局抓取检测 + 腕部 D405 视觉伺服收尾",
+   "text": "GO2 头部 D435i 用 AnyGrasp/GraspGen 给出粗抓取位姿，按 QuadWBG 的可达图思想选择底盘停靠位姿与身体高度；进入 30cm 内切换到 PiPER 腕部 D405，用 IBVS 或 CNS 做最后几厘米闭环对准。可量化的指标是小物体/细长物体的一次抓取成功率与末端误差，对比纯开环抓取。",
+   "refs": [
+    "wang2024quadwbg",
+    "fang2022anygrasp",
+    "murali2025graspgen",
+    "chen2023cns",
+    "chaumette2006vs",
+    "liu2024visual"
+   ]
+  },
+  {
+   "title": "无力传感器的 PiPER 柔顺精细操作",
+   "text": "用 PiPER 关节电流/力矩反馈估计末端外力（参考 LocoPilot 的无传感器力估计与 Portela 的隐式力控），在其上加导纳控制，并让扩散策略像 ACP 一样同时输出位姿与刚度。实验可选插孔、擦桌、抓易碎物，比较固定刚度 vs 自适应刚度的成功率与峰值接触力。",
+   "refs": [
+    "langella2026locopilot",
+    "portela2024learning",
+    "hou2024adaptive",
+    "hogan1985impedance",
+    "hu2026tac"
+   ]
+  },
+  {
+   "title": "在 GO2+PiPER 上复现 UMI on Legs，并研究\"身体姿态辅助\"对低处精细抓取的贡献",
+   "text": "把 UMI on Legs 的操作中心全身控制器换成 PiPER 运动学重训（或用 RoboDuet 双策略），上层接 DP/DP3/iDP3。做对照实验：锁定身体 vs 允许身体俯仰/降高，测地面小物体抓取成功率和工作空间覆盖。",
+   "refs": [
+    "ha2024umionlegs",
+    "pan2024roboduet",
+    "margolis2022walk",
+    "ze2024dp3",
+    "ze2024generalizable"
+   ]
+  },
+  {
+   "title": "腿臂平台上小型 VLA 的数据缩放与动作块研究",
+   "text": "用 LocoPilot 式双 PiPER 主从遥操作 + LeRobot 插件采集移动抓放数据，比较 SmolVLA、pi0、OpenVLA-OFT 在不同数据量/环境数下的表现。参照 Data Scaling Laws 的\"多环境少示教\"设计，验证 Tabletop-to-Walking-Bot 中\"数据覆盖 vs 模型容量\"的结论在你的平台上是否成立。",
+   "refs": [
+    "minelli2026tabletop",
+    "langella2026locopilot",
+    "lin2024data",
+    "shukor2025smolvla",
+    "black2024pi0",
+    "kim2025openvlaoft"
+   ]
+  },
+  {
+   "title": "透明/反光物体的主动视角移动抓取",
+   "text": "RealSense 在透明物体上深度缺失，可直接用 D435i/D405 的 IR 双目原始图跑 ASGrasp；再利用腿臂平台的移动能力做主动视角选择（移动底盘/抬臂换视角）来补全几何。对比单视角与主动多视角的透明物体抓取成功率。",
+   "refs": [
+    "shi2024asgrasp",
+    "graspnet1b",
+    "wang2024quadwbg",
+    "qiu2024learning"
+   ]
+  }
+ ],
+ "hardware_resources": [
+  {
+   "name": "piper_sdk（官方 Python CAN SDK）",
+   "url": "https://github.com/agilexrobotics/piper_sdk"
+  },
+  {
+   "name": "piper_ros（官方 ROS，含 noetic / foxy / humble 分支，带 MoveIt 与仿真）",
+   "url": "https://github.com/agilexrobotics/piper_ros"
+  },
+  {
+   "name": "piper_isaac_sim（官方 Isaac Sim 资产）",
+   "url": "https://github.com/agilexrobotics/piper_isaac_sim"
+  },
+  {
+   "name": "lerobot_robot_piper（AgRobotics Research，LeRobot 第三方插件，需 LeRobot ≥0.4.0）",
+   "url": "https://github.com/AgRoboticsResearch/lerobot_robot_piper"
+  },
+  {
+   "name": "lerobot_robot_piper（WeGo Robotics，主从多臂遥操作插件，PyPI 名 lerobot_robot_wego_piper）",
+   "url": "https://github.com/WeGo-Robotics/lerobot_robot_piper"
+  },
+  {
+   "name": "LeRobot 第三方机器人列表（PiPER 为社区插件，非内置）",
+   "url": "https://huggingface.co/docs/lerobot/third_party_robots"
+  },
+  {
+   "name": "LeRobot",
+   "url": "https://github.com/huggingface/lerobot"
+  },
+  {
+   "name": "openpi（pi0 / pi0.5 / FAST 权重与微调）",
+   "url": "https://github.com/Physical-Intelligence/openpi"
+  },
+  {
+   "name": "unitree_sdk2",
+   "url": "https://github.com/unitreerobotics/unitree_sdk2"
+  },
+  {
+   "name": "unitree_ros2",
+   "url": "https://github.com/unitreerobotics/unitree_ros2"
+  },
+  {
+   "name": "unitree_rl_gym（Go2 RL 训练与部署）",
+   "url": "https://github.com/unitreerobotics/unitree_rl_gym"
+  },
+  {
+   "name": "realsense-ros",
+   "url": "https://github.com/IntelRealSense/realsense-ros"
+  },
+  {
+   "name": "easy_handeye（ROS 手眼标定）",
+   "url": "https://github.com/IFL-CAMP/easy_handeye"
+  },
+  {
+   "name": "ViSP（视觉伺服库）",
+   "url": "https://github.com/lagadic/visp"
+  },
+  {
+   "name": "LocoPilot（GO2+PiPER 遥操作）",
+   "url": "https://github.com/iit-DLSLab/LocoPilot"
+  }
+ ],
+ "top3": [
+  "langella2026locopilot",
+  "ha2024umionlegs",
+  "pan2024roboduet"
+ ]
+}

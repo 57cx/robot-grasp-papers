@@ -1,0 +1,40 @@
+name: Fetch arXiv candidates
+
+on:
+  schedule:
+    # 23:00 UTC = 07:00 Asia/Shanghai (CST, UTC+8, no daylight saving).
+    # arXiv 的每日公告大约在北京时间 08:00–09:00，所以这次抓到的是运行时刻 API 已经公开的新稿。
+    - cron: "0 23 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arxiv-daily
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch candidates
+        run: python scripts/fetch_arxiv.py
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          DATE=$(python -c "from datetime import datetime, timedelta, timezone; print(datetime.now(timezone(timedelta(hours=8))).strftime('%Y-%m-%d'))")
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/arxiv_raw site.json
+          git commit -m "chore: arXiv candidates ${DATE}"
+          git pull --rebase origin main
+          git push origin HEAD:main

@@ -1,0 +1,284 @@
+{
+  "date": "2026-11-14",
+  "source_query": "基于 data/arxiv_raw/2026-11-14.json（arXiv API 自动抓取的 17 篇关键词候选，回溯 7 天，窗口 2026-11-07 10:54 至 2026-11-14 10:54 北京时间）人工筛选，按与 GO2 EDU + PiPER/PiPER-X + RealSense D435i/D405 腿臂移动操作与末端精细抓取课题的相关度挑出 10 篇；每篇标题、作者、分类、摘要已通过 arXiv API（export.arxiv.org id_list 查询）核对一致，并确认 arxiv.org/abs 摘要页标题一致。未收录 2611.17060（Ropedia Xperience 2）：其摘要声称“GPT-6 Astra、Claude Fable 5.1”等基础模型已能直接控制机器人，这些说法无法核实，按谨慎原则不纳入。",
+  "overview_zh": "本期候选只有 17 篇，没有一篇直接做“四足+机械臂”的真机工作（唯一涉及四足移动操作的 AgriSense 完全在 Isaac Sim 虚拟温室里，导航依赖仿真器状态，未收录）。和 han 最相关的有三条线：一是全身移动操作的“数据从哪来”，HALO 让人推着无底座的平台走、同时拖动机械臂末端示教，再用时间对齐和人手修补消除示教/部署差异，采集比 Mobile ALOHA 和 VR 遥操作快最多 2.9 倍；二是没有力传感器时怎么做接触，FORGE 在人形上用动量观测器+学习修正从关节力矩估计腕部外力，嵌入式视觉伺服那篇则用 Jetson Orin + D435i + YOLO11-seg + 手眼标定配合约 2 N 力引导放置，两者都能直接对照 GO2+PiPER 的传感器条件；三是把抓取/几何信息显式交给策略，GraSLA 把 6-DoF 抓取候选当先验输入策略，MOSAIC、STVLA 把深度、障碍和几何记忆注入 VLA。另外 InneR 是一个即插即用的模仿学习正则项，真机上把 diffusion policy 成功率从 18% 提到 57%，适合少样本示教场景。整体看，人形全身控制和 VLA 仍是热点，腿臂平台需要自己从这些工作里“移植”方法。",
+  "items": [
+    {
+      "title": "HALO: Human-Aligned Data Collection for WhoLe-body MObile Manipulation",
+      "authors": [
+        "Shuai Yang",
+        "Fangyi Xu",
+        "Yishu Shen",
+        "Kecheng Zheng",
+        "Yinghao Xu"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.16439",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：学习全身移动操作需要“双臂操作 + 底座移动”协调的示教，但现有采集方式（如 Mobile ALOHA 式遥操作、VR 遥操作）难以同时做到直接控制机器人、感知与动作空间对齐、操作者自然走动。做法：HALO 让操作者通过动觉示教（kinesthetic teaching）直接带动机器人末端，同时推动一个不带真实移动底座的低阻力平台行走，使操作者的感知和动作空间与机器人对齐并保留直接的物理反馈；针对示教与部署之间的差异，提出“部署对齐的示教处理”：标定并在时间上对齐平台运动与真实底座响应，并对录像中示教者的手做遮罩和修补（inpainting）。",
+      "analysis_zh": "效果：与 Mobile ALOHA 和 VR 遥操作相比，示教采集速度最多快 2.9 倍，成功率相当或更高；用 HALO 数据训练的策略能完成扎扎带（zip-tie fastening）这类精细任务，在一个需要反复协调底座与手臂运动的六阶段长程移动操作任务上成功率 73.3%。创新点是把“人推平台走 + 直接拖动末端”结合起来，再用后处理消除示教/部署差异（底座动力学、画面中的人手）。局限：平台是轮式底座 + 双臂，摘要未涉及腿式底座；需要专门的采集硬件；代码/硬件是否开源摘要未说明（项目页 robbyant-research.github.io/Lingbot-ALOHA）。",
+      "relevance_zh": "和 han 的腿臂移动操作直接相关：GO2+PiPER 做全身移动操作同样缺“底座+手臂协调”的示教数据。可借鉴两点：①把底座运动与手臂示教分离采集再做时间对齐/动力学标定（GO2 的速度指令响应比轮式底座更滞后，更需要这一步）；②对 D435i/D405 画面中示教者的手做遮罩修补，减少示教与部署的视觉差异。PiPER 支持拖动示教，单臂版可以较低成本先复刻“动觉示教 + 推车平台”的流程。复现难度中等偏高。",
+      "score": 8.8,
+      "priority": "高",
+      "tags": [
+        "全身移动操作",
+        "数据采集",
+        "动觉示教",
+        "模仿学习",
+        "示教-部署对齐"
+      ]
+    },
+    {
+      "title": "FORGE: Force-Aware Multi-Granularity Control for Efficient Humanoid Loco-Manipulation",
+      "authors": [
+        "Liangjun Xing",
+        "Ke Fan",
+        "Kailin Li",
+        "Bin Wang",
+        "Xiaojie Niu",
+        "Qingwei Ben",
+        "Jiafei Cao",
+        "Wei Yao",
+        "Yebin Liu",
+        "Jingbo Wang",
+        "Weinan Zhang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.17142",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：人形机器人的移动操作需要同时兼顾行走、平衡和频繁接触下的操作，遥操作采集示教很难，控制器必须同时提供精度、稳定性和接触感知。做法：FORGE 是一个力感知的多粒度控制系统，命令空间由粗到细覆盖速度导航、平面落脚点、腕部位姿跟踪和可选的力条件输入；训练不需要全身人体动作轨迹或关节角参考，部署时只用相对骨盆的双腕稀疏位姿、粗运动命令和可选的期望腕部负载。对持续接触，用动量观测器加一个以仿真接触力监督训练的学习修正项，从本体感知和重建的手臂底层 PD 力矩估计低频的腕部等效交互力（无需腕部六维力传感器）；一个准静态虚拟目标环据此调整腕部目标；冻结的行走先验加非对称残差动作来稳定操作引起的全身修正。",
+      "analysis_zh": "实验覆盖统一控制的稳定性、任务空间跟踪、准静态腕部等效力估计、与刚性箱子持续接触时的夹持力，以及在不同负载条件下由 diffusion policy 执行下蹲-抬起任务（摘要未给具体数值）。创新点：无力传感器的接触力估计 + 力条件命令接口，并把它作为下游模仿学习的底层控制器。局限：平台为人形，摘要没有量化指标；力估计是低频、准静态的，不适合快速接触。项目页 bb0928.github.io/forge，代码是否开源摘要未说明。",
+      "relevance_zh": "GO2 和 PiPER 都没有末端力传感器，FORGE 的“动量观测器 + 学习修正，从关节力矩/PD 误差估计末端外力”可以直接移植到 PiPER（其 SDK 可读关节电流/力矩反馈）；“冻结行走先验 + 残差全身动作”的结构也适用于 GO2+PiPER 一体化策略，用来抵消手臂推拉时对机身平衡的扰动。另外它把全身控制器设计成“给模仿学习用的命令接口”，对 han 后续在 GO2+PiPER 上做 diffusion policy 很有参考价值。复现难度高（需自建腿臂一体仿真与 RL 训练）。",
+      "score": 8.5,
+      "priority": "高",
+      "tags": [
+        "腿式移动操作",
+        "全身控制",
+        "力估计",
+        "无力传感器",
+        "强化学习",
+        "Diffusion Policy"
+      ]
+    },
+    {
+      "title": "Embedded Sim-to-Real Visual Servoing: Learned Reaching and Force-Guided Placement",
+      "authors": [
+        "Dezhi Sun",
+        "Duy Khang Banh",
+        "Kenan Niu"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.15658",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：嵌入式的“感知到控制”系统需要在有限算力下同时做好视觉定位和可靠的接触处理。做法：在 NVIDIA Jetson AGX Orin 上搭建共享架构，通过笛卡尔阻抗控制驱动 Franka Research 3；用 RealSense D435i 观测、YOLO11-seg 分割、深度反投影和手眼标定得到机器人坐标系下的度量目标。比较两种策略：从仿真迁移的紧凑 PPO 策略（用于物体区域和孔区域的接近），以及约 2 N 法向接触 + 螺旋搜索的力引导笛卡尔放置。",
+      "analysis_zh": "效果：PPO 策略在仿真中各 1000 回合的成功率为 87.2% 和 83.1%；真机每种策略 50 次试验，学习的混合管线完成率 70.0%，力引导解析管线 74.0%；TensorRT 下平均感知延迟 34.55 ms。结论是“自由空间用学习式接近 + 接触阶段用显式力修正”的嵌入式架构可行。属于系统集成型工作，新意不在算法而在完整、可量化的端到端管线。局限：真机完成率 70% 左右，仿真到真机有明显落差；平台是带力矩感知的 Franka，代码是否开源摘要未说明。",
+      "relevance_zh": "传感器栈与 han 高度重合：D435i + 手眼标定 + YOLO 分割 + 深度反投影 + Jetson Orin，几乎可以照搬到 GO2 EDU（可外挂 Jetson）+ PiPER。差别在于 PiPER 没有 Franka 那样的关节力矩感知和阻抗控制，“2 N 法向接触 + 螺旋搜索”需要用电流估计力或加腕部 F/T 传感器替代。可作为 han 搭建“视觉定位→接近→接触放置”基线管线的工程参考，复现难度低到中。",
+      "score": 8.0,
+      "priority": "高",
+      "tags": [
+        "视觉伺服",
+        "sim2real",
+        "RealSense D435i",
+        "手眼标定",
+        "嵌入式部署",
+        "力控放置"
+      ]
+    },
+    {
+      "title": "GraSLA: A Lightweight Spatial-Language-Action Model with Grasp Hypotheses as Geometric Priors",
+      "authors": [
+        "Jibao Yuan",
+        "Zixiang Zhao",
+        "Wensong Xu",
+        "Siqi Lu",
+        "Shaofei Chen"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.15659",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：用模仿学习训练的语言条件操作策略（连续动作）受示教多样性限制，行为单一；而 6-DoF 抓取检测能给出多样的抓取假设，但开环执行在动态环境中响应性差。做法：GraSLA 是一个轻量的“空间-语言-动作”模型，把抓取假设作为几何先验：用空间基础模型和语言基础模型分别编码场景几何和任务语义，再通过双向交叉注意力与抓取假设融合，输出连续动作。",
+      "analysis_zh": "效果：摘要仅报告 LIBERO 平均成功率 99.30%。创新点是把“抓取检测器的候选位姿”作为策略输入的先验，结合抓取检测的多样性与闭环策略的适应性。局限：摘要只有 LIBERO 仿真结果，没有真机实验信息，也没有给出与基线的对比数字；LIBERO 已接近饱和（前一天的 kNN 论文显示纯检索可达 91.7%），99.30% 的说服力有限；代码情况未说明。",
+      "relevance_zh": "对 han 的末端精细抓取有直接启发：用 D405 腕部点云跑 6-DoF 抓取检测（如 GraspNet 类），把候选抓取作为 token 输入 PiPER 上的模仿学习策略，而不是开环执行最优抓取。这条路线不需要大模型、强调轻量，适合机载部署。但需自己在真机上验证；复现难度中等。",
+      "score": 7.6,
+      "priority": "高",
+      "tags": [
+        "抓取位姿",
+        "6-DoF 抓取",
+        "模仿学习",
+        "几何先验",
+        "轻量模型"
+      ]
+    },
+    {
+      "title": "Inner Product Regularization for Imitation Learning",
+      "authors": [
+        "Benjamin A. Christie",
+        "Tianyu Qiu",
+        "Amy H. Choi",
+        "David Fridovich-Keil",
+        "Dylan P. Losey"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.17159",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：模仿学习策略需要在传感器噪声、场景变化和误差累积等状态扰动下仍能外推。以往正则化方法逐个状态限制策略对扰动的敏感度。做法：InneR（内积正则化）关注“同一扰动在不同状态下引起的输出变化是否一致”：动作空间的内积经策略雅可比（随机策略为 Fisher 信息）诱导出状态空间的内积，其零空间决定哪些状态扰动对策略有一阶影响；把内积方向一致的状态聚类、类内平均后最小化其最小特征值，使相邻状态共享同一零空间。可附加到确定性或随机策略的现有模仿学习管线中。",
+      "analysis_zh": "效果：仿真中，InneR 让策略对无关状态维度和训练/测试分布偏移更鲁棒，而范数惩罚类正则往往不如普通行为克隆；真机机械臂三个操作任务上，在不增加数据的情况下把 diffusion policy 平均成功率从 18% 提升到 57%。创新点是从“一致性”而非“敏感度”的角度做正则，不限制策略表达能力。局限：真机基线成功率本身很低（18%），任务和机械臂型号摘要未说明；代码情况未说明。",
+      "relevance_zh": "han 用少量示教在 PiPER 上训练 diffusion policy 时，过拟合背景/无关物体位置是常见问题，InneR 作为“即插即用”的正则项不需要额外数据，值得在自己的数据上试一试。需要计算策略雅可比，训练开销会增加；复现难度中等。",
+      "score": 7.3,
+      "priority": "中",
+      "tags": [
+        "模仿学习",
+        "Diffusion Policy",
+        "正则化",
+        "鲁棒性"
+      ]
+    },
+    {
+      "title": "RUMI: A Robotiq-Matched Universal Manipulation Interface for Robot Learning with Augmented Reality and Haptic Feedback",
+      "authors": [
+        "Kevin Avdiu",
+        "Seongjin Bien",
+        "Yannik Blei",
+        "Philine Meister",
+        "Johannes Hechtl",
+        "Philipp Schmitt",
+        "Kai Wurm",
+        "Georg von Wichert",
+        "Wolfram Burgard"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.15802",
+      "categories": [
+        "cs.RO",
+        "cs.AI"
+      ],
+      "summary_zh": "问题：很多操作任务需要精确控制接触力，但大规模力感知数据集稀缺；手持采集接口能把交互力直接传给操作者，但多数设计面向简单的平行线性夹爪，与常用机器人夹爪的非线性机构不匹配。做法：RUMI 是与 Robotiq 2F-85 几何匹配的手持通用操作接口，指尖传感器可更换，接触前自然输入、接触后测力；把追踪系统集成进 VR 头显，实时以增强现实提示动作在目标机器人上的运动学可行性；并加入触觉反馈机制，支持仿真和真机上的力感知遥操作。",
+      "analysis_zh": "效果：用户研究中，有实时机器人可视化与位姿初始化时，出现关节限位违规的回合为 3/50，无 AR 时为 16/50；还用两种指尖模态采集的示教训练了模仿策略，并在仿真中评估了触觉接口采集力感知遥操作数据的能力（摘要未给策略成功率）。创新是“夹爪匹配 + AR 可行性反馈 + 触觉”三者结合，弥补 UMI 类接口的运动学不可行问题。局限：绑定 Robotiq 2F-85，策略层面的量化结果摘要中没有。",
+      "relevance_zh": "PiPER 自带的是平行夹爪，RUMI 的“夹爪几何匹配的手持接口”思路可以迁移成 PiPER 夹爪版 UMI；AR 实时显示运动学可行性对 PiPER 这种 6 轴小臂尤其有用（工作空间小、易触限位）。若想采集力感知示教，可参考其可更换指尖传感器设计。复现难度中高（需要硬件设计与 VR 追踪）。",
+      "score": 7.0,
+      "priority": "中",
+      "tags": [
+        "遥操作",
+        "UMI",
+        "触觉反馈",
+        "增强现实",
+        "力感知数据"
+      ]
+    },
+    {
+      "title": "MOSAIC: Modular Obstacle and Spatial-Aware Framework for Manipulation In Cluttered Scenes",
+      "authors": [
+        "Richard Shi",
+        "Mohammad Mahdavian",
+        "Mehrdad Momeni Zadeh",
+        "Mohammed Elmahgiubi",
+        "Amir Rasouli"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.15937",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：大多数 VLA 主要依赖 2D 图像和语言，场景几何与障碍关系只能隐式推断，在杂乱场景中小的空间误差就会导致意外接触或碰撞。做法：MOSAIC 是可接入预训练 VLA 的模块化框架：增加辅助语义定位任务，预测目标物体、放置区域和周围障碍物的角色掩码；把目标/放置掩码与 3D 场景重建估计的深度结合，构造角色相关的几何 token，直接注入动作专家；再用障碍感知注意力监督，强调执行中靠近机器人本体的障碍，并把注意力特征注入动作专家后层。",
+      "analysis_zh": "效果：在 RoboPRO 基准（含视觉扰动测试）和真实操作任务上评测；杂乱场景成功率提升 5.1%，视觉扰动下提升 9.7%，最难环境中最多提升 25.0%。创新是在保留预训练 VLA 结构的前提下显式注入语义、几何和障碍信息。局限：平均提升幅度不大；深度来自 3D 重建估计而非深度相机；代码与数据集称将在论文录用后发布（mmahdavian.github.io/MOSAIC）。",
+      "relevance_zh": "han 有 D435i/D405 的真实深度，可以直接替代 MOSAIC 中的估计深度来构造几何 token，理论上更准。对 PiPER 在杂乱桌面/货架里抓取、避免碰到旁边物体有参考价值。目前代码未开源，复现需要自己实现，难度中等偏高。",
+      "score": 6.8,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "杂乱场景",
+        "避障",
+        "几何 token",
+        "深度"
+      ]
+    },
+    {
+      "title": "STVLA: Spatial-aware and Temporal-memory forVision-Language-Action Models",
+      "authors": [
+        "Zhuo Han",
+        "Yeqiang Wang",
+        "Xinran Wang",
+        "Hongwei Han",
+        "Yi Xiong",
+        "Zunian Wan",
+        "Jianbo Mao",
+        "Huan Peng",
+        "Yongcheng Liu",
+        "Wei Shan",
+        "Maoqing Yao"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.16589",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：机器人操作往往同时需要空间场景理解和任务历史，但很多 VLA 只看当前观测；基于外观的记忆对遮挡和视角变化敏感，而只看当前场景的空间表示又保存不了场景在执行过程中的变化。做法：STVLA 把预训练视觉几何基础模型的特征与视觉表示一起放入时序记忆，让策略回忆过去的场景结构作为当前决策的上下文；用一个兼顾“与当前观测的相关性”和“记忆中的互补证据”的打分规则选择有用的历史。",
+      "analysis_zh": "效果：在 LIBERO、LIBERO-Mem、MIKASA-Robo、SimplerEnv Bridge 上，均为对比方法中平均成功率最高；真机的叠方块、物品整理、手机包装任务上，相比 π0.5 成功率分别提升 58.33、30.00、35.00 个百分点。创新是把几何特征而不只是外观放进记忆。局限：摘要未说明真机平台和推理开销；代码情况未说明（项目页 stvla.github.io）。",
+      "relevance_zh": "GO2+PiPER 在移动中会出现遮挡和视角变化，基于几何的记忆比外观记忆更稳，适合多阶段任务（如先开抽屉再取物）。但它建立在 π0.5 级别 VLA 之上，算力要求高，更适合作为后续 VLA 方案的参考，而非近期复现目标。",
+      "score": 6.5,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "时序记忆",
+        "空间理解",
+        "长程任务"
+      ]
+    },
+    {
+      "title": "I See What You Want: Decoding Hierarchical Operator Intent from Visual Teleoperation History",
+      "authors": [
+        "Xiangyi Jia",
+        "Kaixian Qu",
+        "Shengzhi Wang",
+        "Chenyu Yang",
+        "Robert Katzschmann",
+        "Marco Hutter"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.16419",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：视觉-语言模型能否在没有显式指令的情况下，从遥操作画面中读出操作者想做什么？作者把它表述为层次化意图预测：从一小段视觉遥操作历史中同时推断当前原子动作和它服务的上层任务（mission）。做法：构建 VI AMO 数据集（来自 11 种机器人来源的 6,600 个回合，13,653 条时间对齐的动作标注和 9,702 条任务标注），在其上微调 VLM 得到 Vision-Intention Model（VIM）。",
+      "analysis_zh": "效果：在留出回合上，GPT-4o 的动作/任务 Sentence-BERT 相似度仅 0.563/0.470，GPT-5.6 Luna 为 0.581/0.554；VIM 提升到 0.825/0.821，在训练中两种标签都未出现过的 35.4% 测试动作上仍有 0.726/0.717。下游应用中，VIM 预测的任务让 VLA 策略在真实未见环境中途接管操作，人类遥操作时间相对 GPT-4o 减少 34.6%、相对 GPT-5.6 Luna 减少 39.8%，意图预测延迟平均降低约 70%。局限：评价指标是句向量相似度，不直接等于任务成功；摘要未说明接管实验的机器人平台。",
+      "relevance_zh": "对 han 的遥操作数据采集流程有潜在价值：在 GO2+PiPER 遥操作时由模型识别意图并让策略接管重复性片段，可减少人工操作时间。属于“共享自治/遥操作辅助”方向，与核心的抓取和全身控制关系较间接；数据集若公开可直接用于微调（摘要未说明是否开源）。",
+      "score": 6.0,
+      "priority": "中",
+      "tags": [
+        "遥操作",
+        "意图识别",
+        "VLM",
+        "共享自治",
+        "数据集"
+      ]
+    },
+    {
+      "title": "Input-output characterization of robotic grasping: Connecting design parameters to grasp behavior through the admittance",
+      "authors": [
+        "Julien Vanderheyden",
+        "Guillaume Drion",
+        "Pierre Sacré",
+        "Fulvio Forni"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.16507",
+      "categories": [
+        "cs.RO",
+        "eess.SY"
+      ],
+      "summary_zh": "问题：低阻抗夹爪让抓取的动态特性变得重要，但现有抓取指标都是静态的，只描述被抓物体如何抵抗恒定载荷，不描述它对时变载荷的响应。做法：用小信号分析，以“导纳”（平衡点附近载荷扰动到物体位移的传递矩阵）刻画一个抓取：零频处恢复抓取刚度与稳定性，并能刻画时变载荷下的固有频率和峰值增益。应用于 PD 控制的平面双指夹爪。",
+      "analysis_zh": "效果：同一物体、同一位置、相同接触力的两个抓取，刚度可相差两个数量级；刚度相同的两个抓取也可能有非常不同的共振特性；非线性仿真验证了小信号分析能捕捉抓取的动态行为。属于理论/分析型工作，价值在于提供动态抓取指标。局限：仅平面双指夹爪 + 仿真验证，没有真机实验和学习方法。",
+      "relevance_zh": "GO2 行走时的机身振动会作为时变载荷传到 PiPER 夹爪上的物体，这篇的导纳视角可以帮助理解“走动中抓着的东西为什么会晃/滑”，并指导夹爪 PD 增益与抓取位置选择。偏理论，短期内不直接可用；作为背景阅读。",
+      "score": 5.8,
+      "priority": "低",
+      "tags": [
+        "抓取分析",
+        "导纳",
+        "夹爪控制",
+        "动态抓取"
+      ]
+    }
+  ]
+}

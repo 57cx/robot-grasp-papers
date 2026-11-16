@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-16",
+  "timezone": "Asia/Shanghai",
+  "fetched_at": "2026-11-16T10:32:59+08:00",
+  "source": "arXiv API (export.arxiv.org)",
+  "source_query": "arXiv API：cs.RO，以及标题或摘要命中同一组关键词的 cs.CV / cs.LG。关键词覆盖四足与腿式操作、移动操作、抓取、全身控制、视觉伺服、手眼标定、模仿学习、diffusion policy、VLA、遥操作、sim2real。只保留发布落在回溯窗口内、且没有出现在更早 data/arxiv_raw 文件中的条目。本文件是未解读候选，不是每日解读。",
+  "api_query": "(submittedDate:[202611090232 TO 202611160232]) AND (cat:cs.RO OR cat:cs.CV OR cat:cs.LG) AND (all:quadruped OR all:quadrupedal OR all:\"legged manipulation\" OR all:\"legged manipulator\" OR all:\"loco-manipulation\" OR all:locomanipulation OR all:\"loco manipulation\" OR all:\"mobile manipulation\" OR all:\"mobile manipulator\" OR all:\"whole-body control\" OR all:\"whole body control\" OR all:\"visual servoing\" OR all:\"visual servo\" OR all:\"hand-eye\" OR all:\"hand eye calibration\" OR all:\"imitation learning\" OR all:\"diffusion policy\" OR all:\"vision-language-action\" OR all:\"vision language action\" OR all:VLA OR all:teleoperation OR all:\"tele-operation\" OR all:sim2real OR all:\"sim-to-real\" OR all:\"sim to real\" OR all:\"robotic grasping\" OR all:\"grasp detection\" OR all:\"object grasping\" OR all:\"grasp pose\")",
+  "window_start": "2026-11-09T10:32:59+08:00",
+  "window_end": "2026-11-16T10:32:59+08:00",
+  "lookback_days": 7,
+  "status": "uninterpreted_candidates",
+  "count": 4,
+  "items": [
+    {
+      "arxiv_id": "2611.17751",
+      "title": "When Does Cross-View Consistency Matter in Multi-View Appearance Augmentation? A Controlled Study for Visuomotor Policies",
+      "authors": [
+        "Zixuan Jiang"
+      ],
+      "summary": "Multi-view visual augmentation often seeks consistency across cameras, but it is unclear which forms of consistency matter for downstream control. We use simulation-state replay to manipulate cross-view coupling while preserving the per-camera perturbation distributions, physical trajectories, and action labels. Across seven LIBERO manipulation tasks, marginal-matched changes in global appearance, ghost injection, and target color have small average costs for a late-fusion Diffusion Policy: point estimates are near zero or negative, and the largest upper endpoint of the 90% posterior credible intervals is 2.55 percentage points. In contrast, geometrically anti-coupled observations reduce success by 3.30 percentage points relative to coupled observations (90% CrI [0.64, 6.28]), with displacement magnitude, direction marginals, and the number of affected views matched. Camera interventions reveal substantial dependence on wrist-view geometry, while feature analysis shows appearance sensitivity patterns associated with the factors randomized during training. ACT shows a higher target-color cost estimate than DP, with uncertainty that includes zero and sensitivity to task composition. Within the tested tasks and policy configurations, these findings motivate selective consistency constraints: appearance coupling can sometimes be relaxed, whereas task-relevant geometry and cross-view spatial correspondence warrant protection.",
+      "published": "2026-11-13T05:10:00Z",
+      "updated": "2026-11-13T05:10:00Z",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "primary_category": "cs.RO",
+      "arxiv_url": "https://arxiv.org/abs/2611.17751",
+      "pdf_url": "https://arxiv.org/pdf/2611.17751",
+      "matched_keywords": [
+        "diffusion policy"
+      ]
+    },
+    {
+      "arxiv_id": "2611.17631",
+      "title": "On the Utility of Pre-Trained Visual Representations for Policy Learning of Contact-Rich Insertion Tasks",
+      "authors": [
+        "Leon Kim",
+        "Dinesh Jayaraman",
+        "Michael Posa"
+      ],
+      "summary": "Visuomotor imitation learning has become a predominant paradigm for real-world robotic manipulation, yet it remains data-inefficient and brittle to task-irrelevant visual shifts. Pre-trained visual representations promise to ease this burden by distilling priors from internet-scale data, but the ``right'' representation for robotics remains unresolved: existing studies span broad but sparse task distributions and reach conclusions that vary and even conflict, pointing to strong task and setting dependence. We examine this question by bringing a magnifying glass to a common contact-rich manipulation task: insertion. We compare representations from widely used vision foundation models against an explicit contact-centric representation on two closely related insertion tasks, perturb each along controlled axes of occlusion and physical tolerance, and test whether conclusions transfer to the real world. Task dependence proves to be more subtle than previous, broadly scoped evaluations revealed: the best representation differs even between our near-identical tasks, and small changes shift trends in unpredictable ways. Despite this variability, results across simulation and real-world experiments demonstrate the distinct value of spatially-grounded, and in particular, contact-centric information for contact-rich policy learning, while underscoring how difficult it is to estimate such cues reliably under realistic visual complexity and sensor noise. We hope these findings motivate further study of representations in contact-rich manipulation, along with advances in contact perception and its integration into visuomotor policy learning.",
+      "published": "2026-11-13T01:02:56Z",
+      "updated": "2026-11-13T01:02:56Z",
+      "categories": [
+        "cs.RO"
+      ],
+      "primary_category": "cs.RO",
+      "arxiv_url": "https://arxiv.org/abs/2611.17631",
+      "pdf_url": "https://arxiv.org/pdf/2611.17631",
+      "matched_keywords": [
+        "模仿学习"
+      ]
+    },
+    {
+      "arxiv_id": "2611.17619",
+      "title": "TouchTwin: Scaling Human Touch Data via Real-to-Sim-to-Real",
+      "authors": [
+        "Huiwen Han",
+        "Nuo Chen",
+        "Ziyao Zeng",
+        "Dayou Li",
+        "Hao Wang",
+        "Amir Hossein Rahmati",
+        "Xiaoning Qian",
+        "Bangya Liu",
+        "Zhiwen Fan"
+      ],
+      "summary": "Human demonstrations are becoming the main source of data for dexterous manipulation, and real-to-sim-to-real pipelines multiply each demonstration in simulation. These pipelines rebuild the interaction from vision, which recovers how the hand moves. Which fingers touch, when, and how hard remain unobserved, because a hand pose shows where each finger stops on the surface rather than how far it is driven to close. This gap is a force gap: on held-out recordings, a hand policy that imitates the observed pose grips with 0.31x the recorded force, and a policy trained on physics replays of vision-tracked poses grips with 1.55x. TouchTwin closes the gap with measured human touch. Each selected TouchScale recording, captured with head and wrist RGB-D cameras and an 880-taxel glove, is rebuilt in MuJoCo. Coding agents write the objects as physics-tested programs, and a per-subject tactile hand replays the interaction with the recorded touch setting the contact and the closing force of each finger. In simulation, a policy trained on touch-grounded replays grips at 0.99x the recorded force and succeeds in 20/20 trials on held-out recordings and 35/36 unseen perturbations; a contact predictor trained on them misses 13% of real contact frames, against 32% for vision-based replays. Each replay also seeds perturbed demonstrations with simulated contact and force labels, rendered as realistic video in new views and scenes.",
+      "published": "2026-11-13T00:42:29Z",
+      "updated": "2026-11-13T00:42:29Z",
+      "categories": [
+        "cs.RO"
+      ],
+      "primary_category": "cs.RO",
+      "arxiv_url": "https://arxiv.org/abs/2611.17619",
+      "pdf_url": "https://arxiv.org/pdf/2611.17619",
+      "matched_keywords": [
+        "sim2real"
+      ]
+    },
+    {
+      "arxiv_id": "2611.17394",
+      "title": "Agentic-Teacher: An Agentic Data Engine for Failure-Driven VLA Post-Training",
+      "authors": [
+        "Gongyue Teng",
+        "Yuqing Xie",
+        "Yixian Zhang",
+        "Feng Gao",
+        "Shu'ang Yu",
+        "Jiaji Rao",
+        "Sukai Wang",
+        "Guanghui Ren",
+        "Ya Zhang",
+        "Maoqing Yao",
+        "Yu Wang",
+        "Chao Yu",
+        "Xinlei Chen"
+      ],
+      "summary": "Improving a pretrained vision-language-action (VLA) model requires demonstrations that address its weaknesses and provide effective supervision for learning. Coding agents can autonomously generate demonstrations through environment interaction, yet successful execution alone does not ensure effective supervision for VLA learning. We introduce Agentic-Teacher, an autonomous data engine for failure-driven VLA post-training. Given a VLA checkpoint, a task specification, and configured environment tools, the engine analyzes failed rollouts, selects intervention states, and iteratively develops closed-loop code policies through execution feedback. Validated policies become reusable demonstration generators that collect successful continuations from states where the VLA struggles. To make these demonstrations suitable for learning, Agentic-Teacher introduces temporally correlated action noise to broaden state-action coverage, removes idle frames while preserving gripper transitions, and filters trajectories using the frozen base model's flow-matching loss. The resulting demonstrations are combined with successful VLA rollouts for post-training, yielding an updated policy that operates without coding-agent assistance. Agentic-Teacher thus connects the weaknesses of a target VLA to both the generation and curation of its training data. In simulation, it improves $π_0$ success rates from 79.4% to 87.8% on LIBERO-10, from 80.4% to 90.6% on MetaWorld-10, and from 0% to 30.0% across three RoboCasa tasks.",
+      "published": "2026-11-12T15:43:14Z",
+      "updated": "2026-11-12T15:43:14Z",
+      "categories": [
+        "cs.RO"
+      ],
+      "primary_category": "cs.RO",
+      "arxiv_url": "https://arxiv.org/abs/2611.17394",
+      "pdf_url": "https://arxiv.org/pdf/2611.17394",
+      "matched_keywords": [
+        "VLA"
+      ]
+    }
+  ]
+}

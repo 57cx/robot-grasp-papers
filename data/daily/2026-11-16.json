@@ -1,0 +1,120 @@
+{
+  "date": "2026-11-16",
+  "source_query": "基于 data/arxiv_raw/2026-11-16.json（arXiv API 自动抓取，回溯 7 天，窗口 2026-11-09 10:32 至 2026-11-16 10:32 北京时间）。当天只有 4 篇关键词候选，全部收录（不足 5 篇，未补充任何候选文件以外的论文）；每篇标题、作者已对照 arxiv.org/abs 摘要页核对一致。2026-11-15 的候选文件为 0 篇（周末），无单独解读。2026-11-17 的候选文件在本次解读时（北京时间 09:47）尚未提交到 main。",
+  "overview_zh": "本期候选只有 4 篇（周末 arXiv 停更后的小批量），没有一篇做四足或腿臂平台。共同主线是“模仿学习/VLA 的数据与表征怎么做才有效”：两篇是对照实验型研究——一篇用 LIBERO 仿真回放精确控制多相机增强的跨视角一致性，结论是外观一致可以放松、几何一致（尤其腕部相机几何）必须保住；另一篇在接触丰富的插孔任务上比较各种预训练视觉表征，发现以接触为中心、有空间定位的信息最有价值，但最佳表征随任务细节变化很大。另外两篇是数据引擎：TouchTwin 用触觉手套实测的人手接触力补上“视觉重建只有姿态、没有力”的缺口；Agentic-Teacher 让编码智能体针对 VLA 的失败状态自动写闭环代码策略来生成补充示教，在仿真里把 π0 的成功率明显提高。对 han 来说，前两篇的结论可以直接指导 PiPER + D405 腕部相机的示教数据采集与增强设计。",
+  "items": [
+    {
+      "title": "When Does Cross-View Consistency Matter in Multi-View Appearance Augmentation? A Controlled Study for Visuomotor Policies",
+      "authors": [
+        "Zixuan Jiang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.17751",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：多相机视觉增强通常追求各相机之间保持一致，但到底哪种一致性对下游控制真正重要并不清楚。做法：利用仿真状态回放，在保持每个相机扰动分布、物理轨迹和动作标签不变的前提下，单独操控跨视角的耦合方式；在 7 个 LIBERO 操作任务上测试晚融合的 Diffusion Policy，并对比 ACT。",
+      "analysis_zh": "结果：在边缘分布匹配的条件下，改变全局外观、注入“鬼影”、改变目标颜色对 DP 的平均代价很小（点估计接近 0 或为负，90% 后验可信区间上界最大 2.55 个百分点）；而几何上“反耦合”的观测会让成功率比耦合观测下降 3.30 个百分点（90% CrI [0.64, 6.28]）。相机干预实验显示策略高度依赖腕部视角的几何；ACT 在目标颜色上的代价估计比 DP 高，但区间包含 0。新意在于用受控回放把“外观一致”和“几何一致”拆开量化。局限：只在 LIBERO 仿真、有限任务和策略配置下测试，效应量都在几个百分点量级，没有真机验证。作者为北京大学，代码已开源（github.com/PKUJZX/xview-consistency-augmentation）。",
+      "relevance_zh": "对 GO2+PiPER 的示教数据增强很实用：如果用 D435i（头部/机身）+ D405（腕部）做多视角 DP/ACT，可以放心对两个相机做独立的颜色/外观增强，但不要做破坏跨视角几何对应的增强（如独立随机裁剪/平移），并且要保证腕部 D405 的安装位姿稳定、标定准确。代码开源、仿真可复现，复现难度低；真机结论需要自己验证。",
+      "score": 7,
+      "priority": "中",
+      "tags": [
+        "数据增强",
+        "多视角",
+        "Diffusion Policy",
+        "ACT",
+        "腕部相机",
+        "模仿学习"
+      ]
+    },
+    {
+      "title": "On the Utility of Pre-Trained Visual Representations for Policy Learning of Contact-Rich Insertion Tasks",
+      "authors": [
+        "Leon Kim",
+        "Dinesh Jayaraman",
+        "Michael Posa"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.17631",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：视觉模仿学习数据效率低、对无关视觉变化脆弱，预训练视觉表征被寄予厚望，但“机器人该用哪种表征”至今没有定论，已有研究结论互相矛盾。做法：聚焦接触丰富的插孔（insertion）任务，在两个非常接近的插孔任务上，比较常用视觉基础模型的表征与一种显式的“以接触为中心”的表征，并沿遮挡和物理公差两个受控维度做扰动，再检验结论能否迁移到真机。",
+      "analysis_zh": "结果：任务依赖性比以往大范围评测显示的更微妙——即使两个几乎相同的任务，最优表征也不同，小改动会让趋势不可预测地变化；但仿真和真机实验都表明，有空间定位、特别是以接触为中心的信息对接触丰富的策略学习有明显价值，同时在真实视觉复杂度和传感器噪声下可靠估计这些线索很难。摘要未给具体数值。新意是“放大镜式”聚焦单一任务类别做受控对比。局限：只覆盖插孔任务，接触表征依赖可靠的接触感知。作者来自宾大 GRASP 实验室。",
+      "relevance_zh": "han 做末端精细操作（插拔、对孔）时可参考：不要默认“换个更大的预训练视觉编码器就能变好”，更值得投入的是给策略提供空间几何/接触信息，例如用 D405 近距深度点云、末端相对位姿，或用 PiPER 关节电流估计接触。结论偏分析性，摘要未说明是否开源，复现中等；可作为设计观测空间时的依据。",
+      "score": 7.2,
+      "priority": "中",
+      "tags": [
+        "接触丰富操作",
+        "插孔",
+        "预训练视觉表征",
+        "模仿学习",
+        "接触感知"
+      ]
+    },
+    {
+      "title": "TouchTwin: Scaling Human Touch Data via Real-to-Sim-to-Real",
+      "authors": [
+        "Huiwen Han",
+        "Nuo Chen",
+        "Ziyao Zeng",
+        "Dayou Li",
+        "Hao Wang",
+        "Amir Hossein Rahmati",
+        "Xiaoning Qian",
+        "Bangya Liu",
+        "Zhiwen Fan"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.17619",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：人类示教正成为灵巧操作的主要数据源，real-to-sim-to-real 流程能在仿真里放大每条示教，但这些流程靠视觉重建交互，只能恢复手怎么动，看不到哪根手指接触、何时接触、用多大力——这是一个“力的缺口”。做法：用实测的人手触觉补上这个缺口：选取 TouchScale 数据集中的录制（头部和腕部 RGB-D 相机 + 880 触点手套），在 MuJoCo 中重建；由编码智能体把物体写成经过物理测试的程序，再用每个被试的触觉手模型回放交互，用记录的触觉设定每根手指的接触和闭合力。",
+      "analysis_zh": "结果：只模仿观测姿态的手部策略抓握力只有记录值的 0.31 倍，用视觉追踪姿态的物理回放训练的策略为 1.55 倍；用触觉回放训练的策略为 0.99 倍，在保留录制上 20/20 成功、在未见扰动上 35/36 成功；用其训练的接触预测器漏检 13% 的真实接触帧，而视觉回放为 32%。每条回放还能生成带仿真接触/力标签的扰动示教，并渲染成新视角新场景的视频。局限：面向多指灵巧手，依赖专门的高密度触觉手套；主要结果在仿真中。来自 Stanford、Texas A&M、Yale 等，项目页 touchtwin.github.io。",
+      "relevance_zh": "和 han 的硬件匹配度一般：PiPER 是平行夹爪，不是多指手，也没有触觉手套。可借鉴的是思路——“只有视觉姿态的示教会系统性地抓得太松或太紧”，在做夹爪精细抓取的 real-to-sim 时也应记录夹持力（如 PiPER 夹爪电流/力反馈）作为标签。直接复现难度高，建议作为背景阅读。",
+      "score": 5.5,
+      "priority": "低",
+      "tags": [
+        "real-to-sim-to-real",
+        "触觉",
+        "人类示教",
+        "灵巧操作",
+        "抓握力"
+      ]
+    },
+    {
+      "title": "Agentic-Teacher: An Agentic Data Engine for Failure-Driven VLA Post-Training",
+      "authors": [
+        "Gongyue Teng",
+        "Yuqing Xie",
+        "Yixian Zhang",
+        "Feng Gao",
+        "Shu'ang Yu",
+        "Jiaji Rao",
+        "Sukai Wang",
+        "Guanghui Ren",
+        "Ya Zhang",
+        "Maoqing Yao",
+        "Yu Wang",
+        "Chao Yu",
+        "Xinlei Chen"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.17394",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：改进一个预训练 VLA 需要针对其弱点、并且能提供有效监督的示教；编码智能体能通过与环境交互自动生成示教，但“执行成功”不等于“适合 VLA 学习”。做法：Agentic-Teacher 是面向失败驱动 VLA 后训练的自动数据引擎。给定 VLA 检查点、任务描述和环境工具，它分析失败的 rollout、选择干预状态，通过执行反馈迭代编写闭环代码策略；验证通过的策略成为可复用的示教生成器，从 VLA 卡住的状态采集成功的后续轨迹。为让数据适合学习，引入时间相关的动作噪声扩大状态-动作覆盖、去掉静止帧但保留夹爪开合时刻，并用冻结基座模型的 flow-matching 损失过滤轨迹；最终与 VLA 自身成功 rollout 合并做后训练。",
+      "analysis_zh": "结果（仿真）：π0 在 LIBERO-10 上成功率从 79.4% 提到 87.8%，MetaWorld-10 从 80.4% 到 90.6%，三个 RoboCasa 任务从 0% 到 30.0%。新意是把“VLA 的失败点”同时连到数据生成和数据筛选上，而且后训练后的策略不再需要编码智能体。局限：只有仿真结果，依赖可编程访问的环境工具（真机上获取物体状态、自动复位都更难）。作者来自清华、Striding AI、智元（AGIBot）。",
+      "relevance_zh": "如果 han 后续在 PiPER 上微调 π0 类 VLA，其中“去静止帧但保留夹爪开合帧”“加时间相关动作噪声”“用基座模型损失过滤示教”这几个数据处理技巧可以直接用到自己的遥操作数据上，成本很低。整套引擎需要仿真环境（如把 PiPER 放进 MuJoCo/Isaac），真机全自动化难度高；摘要未说明是否开源。",
+      "score": 6.5,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "后训练",
+        "数据引擎",
+        "π0",
+        "失败驱动",
+        "仿真"
+      ]
+    }
+  ]
+}

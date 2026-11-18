@@ -1,0 +1,276 @@
+{
+  "date": "2026-11-17",
+  "source_query": "基于 data/arxiv_raw/2026-11-17.json（arXiv API 自动抓取，回溯 7 天，窗口 2026-11-10 12:57 至 2026-11-17 12:57 北京时间）。该文件共 30 篇未解读候选；从中选出与腿臂操作、精细抓取、视觉伺服、VLA、sim2real 及 GO2 运动最相关的 10 篇，每篇标题、作者已对照 arxiv.org/abs 摘要页核对一致。2026-11-18 的候选文件在本次解读时尚未出现在 main。2026-11-15 的候选文件为 0 篇（周末），此前已说明、无单独解读。",
+  "overview_zh": "这批 30 篇候选里，和 han 硬件最贴近的信号很集中，不再是“只有仿真、没有腿臂平台”。最硬的一篇直接把框架做到了松灵 AgileX PiPER + RealSense D435i 上：用冻结的 VLA 做通用骨架，再把抓取、对准、插管等关键阶段拆成强化学习原子技能并动态路由，试管转运全任务成功率从 12% 提到 74%。另外两条腿臂主线分别来自 Notre Dame：一条用头显 RGB-D 把人类示教转成物理可执行的全身轨迹，在宇树 G1 上零真机示教微调 GR00T N1.7 做走过去抓瓶子/戴帽子；另一条用采样式全身 MPC 让 H1-2 撑着桌沿探身，把可及空间往外扩约 50 厘米。视觉伺服方面，ETH 把残差 SAC 叠在逆雅可比 PI 上，传送带跟踪零样本上真机，误差收到 0.3–0.7 mm。还有一篇几乎就是 GO2 + D435 的现成工作：感知不可靠时自动回退到本体感觉，保证能过障碍而不是瞎撞。其余几篇补方法：换机位/换夹爪的自标定抓放、VLA 测试时按潜在计划扩样本、带触觉的用力开门，以及一篇 VLA 全周期综述。驾驶、游戏和纯安全攻击类候选已排除。",
+  "items": [
+    {
+      "title": "MARS: Dynamic Routing of Reinforcement-Learned Atomic Skills for Multi-Stage Robotic Manipulation",
+      "authors": [
+        "Zequan Zeng",
+        "Junqin Yang",
+        "Kai Wang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.19324",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：VLA 做多任务操作已经比较强，但在抓取、对准、插入这类需要精度和稳定性的关键阶段仍然容易晃、容易失败；只用最终成败作为奖励，又很难把中间步骤学好。做法：MARS 把冻结的 VLA 当作通用骨干，把关键阶段拆成独立的原子技能，用共享的轻量 RL Token 适配器提取状态，再用 TD3 分别训练各技能；路由侧用 Mamba 编码时间窗，结合技能语义查询做动态切换。评估包括 LIBERO、仿真试管转运，以及真机。",
+      "analysis_zh": "结果：LIBERO 四个套件上路由 Macro-F1 平均 90.47%，比 MLP 路由高 7.08 个百分点；仿真试管转运全任务成功率从 20.04% 提到 85.67%，其中插入技能从 69.57% 提到 96.85%。真机在松灵 PiPER + 平行夹爪 + RealSense D435i（RGB 640×480 @ 30 Hz）上做三支试管的抓-移-对准-插入-释放：全任务成功率从冻结 VLA 的 12.00% 提到 74.00%，样本完成率从 27.33% 提到 83.33%，抓取 136/139（基线 66/94）、插入 125/136（基线 41/66），成功回合平均耗时 31.96 s 对 39.53 s。新意是把“阶段级 RL 精修”和“时序感知的动态路由”拆开，而不是端到端重训整个 VLA。局限：真机布局、相机和料架是固定的，作者也写明换布局、换工况还需要再验证；正文未提供开源仓库。",
+      "relevance_zh": "这是本期和 han 硬件重合度最高的一篇：机械臂就是 AgileX PiPER，相机就是 D435i，任务就是精细抓取和对孔插入。可直接当作 PiPER 上“VLA 管全程、RL 管关键阶段”的对照实现，先在自己的桌面抓插任务上复现路由和原子技能，再考虑接到 GO2 的移动基座上。没有找到开源代码，复现需要按论文自己搭训练和路由；真机部分与现有装备几乎同款，可复现性在硬件侧很高。",
+      "score": 9.5,
+      "priority": "高",
+      "tags": [
+        "VLA",
+        "强化学习",
+        "原子技能",
+        "动态路由",
+        "抓取",
+        "插入",
+        "PiPER",
+        "RealSense D435i",
+        "真机"
+      ]
+    },
+    {
+      "title": "Ego2Sim2Humanoid: Agentic Real-to-Sim for Learning Loco-Manipulation VLAs without Robot Demonstrations",
+      "authors": [
+        "Chen Liu",
+        "Nikolaus Correll"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.19196",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：全身 VLA 缺的是带动作标签的机器人轨迹，真机遥操作又贵又慢；头显能录人的演示，但只看得到头和入画的手，直接把人的动作抄到身高、臂长、手型都不同的机器人上，接触对不齐。做法：E2S2H 用头显 RGB-D 和头部轨迹重建场景与接触带，抓取规划器把接触带变成可行的腕部位姿和手指闭合，双层站姿优化保证手够得到且不撞桌，再用全身运动生成补上出画的腿和手臂，并在物理仿真里做运动校正。沿优化轨迹用机器人机载相机视角重新渲染，得到同步的图像、本体感觉和动作标签。",
+      "analysis_zh": "结果：只用转换后的数据、没有任何目标任务的真机示教，在宇树 G1 上微调 GR00T N1.7：提瓶子 20 次成功 9 次（45%），戴帽子 20 次成功 5 次（25%）。提瓶时 17/20 走到桌边，失败主要发生在抓取（撞倒瓶子 6 次、空中闭合 2 次）；戴帽时全部走到桌边，但 12 次抓取失败，另有 3 次把帽子磕到头上。新意是把 real-to-sim 重建首次用到人形的头显示教，并用物理仿真校验全身轨迹，而不是只做运动学重定向。局限：物体质量、惯量和摩擦由智能体按视频先验估计；抓取仍是主要失败点；手是三指 Dex3，和人的形态差还在。作者来自 Notre Dame，项目页 https://robonana.github.io/ego2sim2humanoid/。",
+      "relevance_zh": "平台是 G1 人形而不是 GO2+PiPER，不能直接部署。但“用人的 RGB-D 示教生成带校验的机器人轨迹，避免每条数据都上真机遥操作”这条数据管道，非常值得 han 借鉴：用 D435i/D405 录人的手部演示，在仿真里适配 PiPER 夹爪和 GO2 站位，再渲染机器人视角做模仿学习。全身站姿优化对腿臂一体够桌沿物体也有启发。复现需要头显、场景重建和 G1/仿真栈，工程量不小，建议先读项目页再决定是否移植思路。",
+      "score": 8.8,
+      "priority": "高",
+      "tags": [
+        "loco-manipulation",
+        "VLA",
+        "real-to-sim",
+        "全身控制",
+        "抓取",
+        "示教",
+        "Unitree G1",
+        "GR00T"
+      ]
+    },
+    {
+      "title": "Leaning Over to Reach Far-Away Objects",
+      "authors": [
+        "Allen Devaraj",
+        "William Xie",
+        "Nikolaus Correll"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.19100",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：桌面上够不着的物体，靠站着伸手往往超出工作空间；很多全身控制在回避或被动承受接触，但这里必须主动撑住环境才能探得更远。做法：在宇树 H1-2 上用采样式全身 MPC，只靠本地感知和 fiducial 标记，完成探身、撑桌、伸手和收回。控制器在笔记本上实时跑 34 Hz，从 MuJoCo 仿真零调参转到真机。",
+      "analysis_zh": "结果：可比不撑桌的站立工作空间多伸出约 50 cm，负载姿态能保持超过 4 分钟（之后位姿估计会漂）。54 次试验（6 个目标 × 3 种桌高 0.935/0.985/1.035 m）：到达目标 89%（48/54），完整“到达+收回”81%（44/54）。最高那档桌子上，两个更靠外侧的深处目标已经超出当前撑持工作空间；失败试验里质心会慢慢越出支撑域。作者还分析了为什么很小的实时采样预算就够用：动作的时间持续性和探索尺度很关键，CEM 在规划频率和模型误差上的可用区间最宽。新意是给出接触丰富的在线全身探身操作的真机基线。局限：依赖 fiducial 和位姿估计，长时会漂；目前是人形双臂平台。代码、视频和硬件细节在 https://h12leaner.github.io/。",
+      "relevance_zh": "GO2 比 H1-2 矮、也更轻，不能照搬“整个人形趴上桌沿”，但“用接触扩大腿臂工作空间”对 GO2+PiPER 够远处桌面物体很有用：可以试前腿或机身轻撑桌沿/地面，再让 PiPER 探出去，用采样 MPC 或全身优化保证不翻。代码开源、仿真是 MuJoCo，方法可复现；要迁到 GO2 需要重做接触力学和稳定性约束，并换掉对 fiducial 的依赖（可用 D435i 做视觉定位）。",
+      "score": 8.5,
+      "priority": "高",
+      "tags": [
+        "全身控制",
+        "MPC",
+        "接触丰富操作",
+        "工作空间",
+        "sim2real",
+        "Unitree H1-2",
+        "开源"
+      ]
+    },
+    {
+      "title": "Residual Reinforcement Learning for Visual Servo Control with Zero-Shot Sim-to-Real Transfer",
+      "authors": [
+        "Mahdi Nobar",
+        "Alisa Rupenyan",
+        "John Lygeros",
+        "Jürg Keller"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.19318",
+      "categories": [
+        "cs.RO",
+        "eess.SY"
+      ],
+      "summary_zh": "问题：用机械臂视觉伺服跟踪传送带上的运动物体时，数字孪生不准、测量有延迟和噪声，纯模型控制器容易顶到精度上限。做法：在整形后的逆雅可比 PI 控制器上叠加一个残差策略，在数字孪生里用 Soft Actor-Critic 训练；再用带时延补偿的卡尔曼滤波融合乱序到达的双目相机测量，估计运动目标位置。策略只在仿真里训练，对运动学、延迟、噪声和目标运动做域随机化，然后零样本上真机。",
+      "analysis_zh": "结果：在 Franka Emika Panda 真机上，传送带速度 27.9–41.8 mm/s 时，基线逆雅可比 PI 的平均 L2 跟踪误差从 1.1 mm 升到 1.4 mm，残差 SAC–PI 则保持亚毫米，均值在 0.3–0.7 mm，RMS 大约降低 0.8 mm；换速度不必重新训练或微调。作者还用频域灵敏度分析给出一类模型控制器的误差下界，并指出残差策略可以把误差压到这个下界以下。新意是把经典视觉伺服和残差 RL 接起来，并用可证明的性能界来解释增益。局限：任务是传送带跟踪而不是抓取本身；相机是立体视觉，正文未强调开源。作者来自 ETH Zürich 与瑞士应用科学大学，受 NCCR Automation 资助。",
+      "relevance_zh": "对 PiPER + D435i/D405 做视觉伺服很有迁移价值：不必一上来就端到端学整个控制器，可以先做一个基于雅可比的标称跟踪/接近控制器，再用仿真残差 RL 补标定误差、延迟和噪声，然后零样本上真机。PiPER 的动力学和 Franka 不同，数字孪生和域随机化要重做；亚毫米指标在 PiPER 上未必能直接达到，但这条“标称控制+残差”的路子工程上可落地。未见开源仓库，复现中等。",
+      "score": 8.3,
+      "priority": "高",
+      "tags": [
+        "视觉伺服",
+        "残差强化学习",
+        "sim2real",
+        "零样本",
+        "跟踪",
+        "Franka"
+      ]
+    },
+    {
+      "title": "PROOF: Perceptive Robustness via Out-of-Distribution Fallback for Legged Locomotion",
+      "authors": [
+        "Siyuan Wang",
+        "Dongjie Zhu",
+        "Jinxuan Lu",
+        "Wenjun Xu",
+        "Jiankun Wang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.18305",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：用深度视觉做四足感知运动，过沟、上台、走独木很敏捷，但遮挡、反光、光照一变，深度不可靠时策略会把错误地形信以为真，容易翻车。做法：PROOF 采用教师-学生两阶段。教师看高程图，并在随机遮盖外感知的条件下同时学会“看地形的敏捷动作”和“只靠本体感觉的回退步态”；学生用深度图估计外感知特征及其不确定性，输入不可靠时把门控关掉，回退到本体感觉控制。",
+      "analysis_zh": "结果：真机是宇树 Go2 + 前置单台 RealSense D435。正常视觉下能做跨大缝、上台、走窄梁等动态 parkour；在遮挡和强光照变化下仍能保持稳定行走。附录在平地和楼梯、0/0.5/1.0 m/s 等受控视觉破坏下各测 5 次，PROOF 几乎都能正常行走，剩下的失败出现在更强破坏。图 7 显示难度升高后，PROOF 在最大测试缝宽上成功率最高，中高难度上台也保持较强。新意是不只做“对噪声更鲁棒”，而是在视觉彻底不可信时主动关掉外感知。局限：训练时覆盖的是遮挡、伪影块和强视觉破坏等代表性失效，作者承认无法穷尽所有传感器与环境情况。作者来自南科大、清华、港科广和鹏城实验室，项目页 https://syw-robotics.github.io/proof-loco/。",
+      "relevance_zh": "硬件几乎就是 han 的 GO2 + D435i（论文用 D435，同系列深度相机）。做移动操作前，狗先得在深度失效时还能稳走，否则臂还没伸出去人就倒了。可以直接把“不确定性门控 + 本体感觉回退”接到现有感知运动策略上，作为 GO2 的安全层。这不是抓取论文，但和移动操作的底座强相关。项目页可查视频与细节；正文未单独给出代码仓库链接，复现需按教师-学生和 Isaac Lab 训练流程自己实现。",
+      "score": 8,
+      "priority": "高",
+      "tags": [
+        "四足",
+        "感知运动",
+        "Unitree Go2",
+        "RealSense D435",
+        "OOD",
+        "教师-学生",
+        "鲁棒性"
+      ]
+    },
+    {
+      "title": "Self-Calibrating Vision-Agent-Action: Deploying Pick-and-Place to New Robot Cells without Demonstrations or Fine-Tuning",
+      "authors": [
+        "Jae Hun Hwang",
+        "Yechan Seo",
+        "Hong-In Won"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.19198",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：换了机械臂、夹爪、相机位姿或镜头畸变之后，VLA 常常直接失效，通常还要重新采集示教或微调。做法：Vision-Agent-Action（VAA）不微调、不采集示教，用预训练视觉-语言和语言模型做语义理解，靠机器人自己的运动和指尖观测测量新单元的指令映射、相机几何和镜头畸变，再根据测得的物体深度规划抓取。",
+      "analysis_zh": "结果：全部在仿真里评测。受控研究改了臂（Panda→UR5e）、夹爪、相机位姿（平移 10 cm 并旋转 10°）、镜头、光照、桌面、物体等。在 18 个包含夹爪或基座坐标系变化的单元上，冻结 VAA 成功 230/360（64%），经过 refinement 的 VAA 268/360（74%），同子集上最强已发布 VLA 只有 76/360（21%）。消融里完整系统 50/60（83%）。新意是把“测新单元几何”当成部署程序，而不是再收集示教。局限：摘要和正文都明确写的是仿真，没有真机；VLA 基线拿的是 RGB、VAA 用了 RGB-D，作者做了 RGB-only 消融来讨论这一差异。作者来自汉阳大学。",
+      "relevance_zh": "对 han 很实用的是那套自标定流程：换 D435i/D405 安装位置、把 PiPER 装到 GO2 上导致相机和基座坐标系都变时，先测指令映射和手眼几何，再在实测深度上规划抓取，而不是立刻重采集遥操作数据。仿真结论不能直接当真机指标，建议把“指尖观测标定 + 深度抓取规划”单独在 PiPER 单元上验证。未见开源代码，复现中等。",
+      "score": 7.6,
+      "priority": "中",
+      "tags": [
+        "手眼标定",
+        "自标定",
+        "抓放",
+        "VLA",
+        "部署",
+        "仿真"
+      ]
+    },
+    {
+      "title": "PlanDiv: Test-Time Scaling with Latent Plans for Vision-Language-Action Models",
+      "authors": [
+        "Hanbo Zhang",
+        "Lianlei Shan",
+        "Liuhaichen Yang",
+        "Zezhi Tang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.20010",
+      "categories": [
+        "cs.RO",
+        "cs.CV",
+        "cs.LG"
+      ],
+      "summary_zh": "问题：测试时给 VLA 多抽几条动作再挑最好的，收益很快就没了——因为候选往往只是同一解码器上的噪声，并不是不同计划。做法：PlanDiv 学一组潜在计划，一次前向就能给出计划条件的多个候选，并用执行器自己的似然排序，无需额外监督。",
+      "analysis_zh": "结果：在 CALVIN ABC→D 和 LIBERO-Long 上，同样候选数量时，计划条件的候选优于自回归、无计划和同计划重采样；8 个计划条件候选分别消掉 30% 和 40% 的单候选失败，而匹配的重采样最多消掉 21%；在 CALVIN 各列上，4 个计划甚至超过 8 个重采样样本。真机 Franka：在只有一种解法的任务上与单输出 OpenVLA-OFT+ 持平，在两种解法的两个任务上 54 次成功 51 次，基线 40/54，相当于去掉了基线 14 次失败中的 11 次。新意是把测试时扩展从“多采样同一计划”改成“先分叉计划再执行”。局限：只用了一种骨干和一条手臂。未见开源仓库。",
+      "relevance_zh": "如果 han 在 PiPER 上跑 OpenVLA/π0 这类模型，测试时与其把温度调高多抽几条相似轨迹，不如先让模型给出不同抓取/接近计划再选。真机已经在 Franka 上验证了“多解任务更受益”。迁移到 PiPER 需要自己接推理栈，计算开销会增加；适合作为推理阶段的增强，不必先改训练数据。",
+      "score": 7.2,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "测试时扩展",
+        "潜在计划",
+        "Franka",
+        "CALVIN",
+        "LIBERO"
+      ]
+    },
+    {
+      "title": "TMA: Sim-to-Real Forceful Humanoid Manipulation via Tactile-Driven Motor Adaptation",
+      "authors": [
+        "Yiting Chen",
+        "Kelin Yu",
+        "Sarthak Kaingade",
+        "Bryan Trinh",
+        "Kaiyu Hang",
+        "Roberto Martin-martin",
+        "Nima Fazeli",
+        "X. Alice Wu"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.18976",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：人形 loco-manipulation 过去多半是“几何对上就能成功”的交互；拧圆形门把手这种事，需要多指摩擦抓稳、输出足够力矩开锁、边推门边保持全身稳定，只靠几何对齐不够。做法：Tactile-Driven Motor Adaptation（TMA）围绕触觉可观测的交互来组织策略，用锥几何作为多指接触的归纳偏置，并配合全身控制器。策略完全在仿真中训练。",
+      "analysis_zh": "结果：零样本转到宇树 G1 + BrainCo Revo2 多指手上，在四种市售圆形门把手上优于标准 Rapid Motor Adaptation 和反应式触觉策略；每种把手 10 次试验，定量对比见图 6（正文用图给出抓取成功 G 与开门成功 S，未在段落中汇总总成功率）。仿真消融中，完整触觉表征抓取 91.3±1.0%、开门 80.9±1.4%，比只用法向力或剪切分量更高。新意是把用力的多指操作和全身稳定放在同一个零样本 sim-to-real 框架里。局限：强依赖多指触觉；任务集中在圆形门把手。作者来自 UT Austin 与密歇根大学，项目页 humanoid-tma.github.io。",
+      "relevance_zh": "和 han 的硬件差距明显：PiPER 是平行夹爪，通常没有多指触觉；G1 的全身开门也不能直接搬到 GO2。可借鉴的是“接触力/滑移才是用力操作的关键观测”——如果 PiPER 有夹爪电流或力反馈，做插拔、旋转把手类任务时，应把力信号纳入适应，而不是只看视觉几何。直接复现需要多指手和触觉，难度高，作背景阅读即可。",
+      "score": 6.8,
+      "priority": "中",
+      "tags": [
+        "loco-manipulation",
+        "触觉",
+        "力控",
+        "sim2real",
+        "Unitree G1",
+        "门把手"
+      ]
+    },
+    {
+      "title": "DAPPT: Domain-Aware Policies from Procedural Trajectories for Sim-to-Real Dexterous Tool Use",
+      "authors": [
+        "Beining Han",
+        "Jia Deng"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.20202",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：仿真到真机的强化学习在刚体操作上已经不错，但一碰到可变形物体和颗粒（沙子、橡皮泥），仿真既慢又不准，工具使用策略很难迁移。做法：DAPPT 在 19 自由度的 XHand1 + Franka R3 上走教师-学生：先学基于状态的教师，再蒸馏成视觉策略；关键是用程序化轨迹学习“域感知”策略，把域参数（如材料属性）作为条件，从而在刚性仿真里学到对这些参数敏感的工具技能。",
+      "analysis_zh": "结果：选对域参数后，任务指标比参数取平均时提升 1.5–3.8 倍，并超过先前的 SimToolReal。真机用 RealSense D435 深度点云，零样本迁移；例如铲沙时，参数取采样范围均值平均铲到 2.9 g，用 Genesis Best 参数平均 7.7 g。新意是不硬追可变形物体的高精度仿真，而是让策略意识到域参数并在部署时选择。局限：作者写明泛化有限，物体位姿分布比较窄。代码开源：https://github.com/princeton-vl/DAPPT。作者来自 Princeton VL。",
+      "relevance_zh": "相机正好是 D435，但末端是灵巧手而不是 PiPER 平行夹爪，工具技能（刮沙、滚橡皮泥、铲沙等）也不是 han 当前的抓取主线。若以后用夹爪玩工具或接触可变物体，可以借鉴“把域参数当作策略输入、用程序化轨迹在刚体仿真里训练再零样本迁移”。代码开源，仿真可复现，但手和任务都要改，迁移成本不低。",
+      "score": 6.5,
+      "priority": "中",
+      "tags": [
+        "sim2real",
+        "工具使用",
+        "灵巧手",
+        "域随机化",
+        "RealSense D435",
+        "Franka",
+        "开源"
+      ]
+    },
+    {
+      "title": "Vision-Language-Action Models: A Life-Cycle Survey of Design, Training and Deployment",
+      "authors": [
+        "Suvarna Kadam",
+        "Soran Parsa"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.18372",
+      "categories": [
+        "cs.RO",
+        "cs.AI",
+        "cs.ET",
+        "cs.LG"
+      ],
+      "summary_zh": "问题：VLA 从 RT-2 起步不到四年，已经走到可在单张消费级 GPU 上微调的开源模型，设计、训练和部署选择非常多，缺少按生命周期整理的地图。做法：这篇综述按设计、训练和部署三个阶段梳理 VLA，覆盖从早期 RT-2 到 OpenVLA、π 系列和 GR00T 等开源模型的路线，以及数据、动作表示、推理和部署约束。",
+      "analysis_zh": "新意在于用“生命周期”把分散的模型、数据和部署问题串起来，而不是只列模型名字。例如对 GR00T 一线，作者指出 N1 之后的 N1.5/N1.6/N1.7 主要写在 NVIDIA 开源仓库的发布说明里、没有独立论文，数据和评估细节因此更难对齐。局限：作为综述不提供新的真机指标，质量取决于覆盖是否及时、分类是否对 han 的问题有用。阅读时应以原始论文和仓库为准，不要只记住综述里的转述。",
+      "relevance_zh": "适合当作 VLA 选型和部署的导读：如果 han 打算在 PiPER 上微调开源 VLA（OpenVLA、π0、GR00T 等），先用这篇对齐“数据要多少、动作怎么表示、能不能在单卡上微调、部署时延大概在哪”。它不直接给出 GO2+PiPER 的实验方案，但能减少选型弯路。",
+      "score": 6.2,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "综述",
+        "训练",
+        "部署",
+        "开源模型"
+      ]
+    }
+  ]
+}

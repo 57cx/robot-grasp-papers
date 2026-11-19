@@ -1,0 +1,319 @@
+{
+  "date": "2026-11-18",
+  "source_query": "基于 data/arxiv_raw/2026-11-18.json（arXiv API 自动抓取，回溯 7 天，窗口 2026-11-11 12:00 至 2026-11-18 12:00 北京时间）。该文件共 38 篇未解读候选；从中选出与腿臂操作、精细抓取、四足控制、VLA 部署及 GO2+PiPER 最相关的 10 篇，每篇标题、作者已对照 arxiv.org/abs 摘要页核对一致。2026-11-19 的候选文件在本次解读时尚未出现在 main。",
+  "overview_zh": "这批 38 篇候选里，出现了一篇和 han 硬件几乎对得上的工作：全北大学在 Unitree Go2 + 松灵 PiPER 六轴臂上做末端连续轨迹跟踪，末端加 IMU，用残差强化学习补偿腿–臂误差链，仿真训练后零微调上真机，MoCap RMSE 相对名义控制器平均降 18.4%。这是今天最该先读的。另一条主线是全身 loco-manipulation 的模仿学习：Body Schema Policy 把运动学树写进视觉–动作接口，约 35M 参数在仿真宇树 G1 上追平数十亿参数的基础模型，真机 G1（头部 RealSense D435i）推车和脚开垃圾桶两项合计 16/20，并在 Fetch 移动操作上对齐 π0.5。实践向的还有一篇直接跑在 Go2 上的热管理步态：5 kg 负重、1 m/s 走，把过热关机从 19 分钟拉到电量耗尽的 174 分钟。其余补方法：整臂环抱抓大物体（Franka + RealSense）、推理时矫正冻结 VLA 的驱动偏差（开源）、多吸引子模仿抓取、遥操作数据质量、开源的腿式本体感觉里程计、Go1 仿真上的无周期步态规划，以及仅仿真的轮式双机协作。驾驶、轮椅遥操作、纯人形舞蹈/避障等已排除。",
+  "items": [
+    {
+      "title": "Learning Accurate End-Effector Trajectory Tracking with Inertial Feedback for a Quadruped Manipulator",
+      "authors": [
+        "Dohyeon Kim",
+        "Seungyong Han",
+        "Yeongtae Jung"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.22695",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：四足加臂做末端轨迹跟踪时，关节间隙、接触和几何误差会沿着腿–臂运动学链传到末端，只靠关节编码器看不全这些误差。做法：在末端加 IMU，用残差强化学习在名义腿、臂逆解控制器之上输出臂的修正量；策略在 Isaac Lab 里用 PPO 训练，再做两阶段 sim-to-real 对齐（辨识仿真参数 + 学习 IMU 残差），不微调直接上真机。平台是 12 自由度 Unitree Go2 加松灵 AgileX 六轴 PiPER，末端是 E2BOX 的 EBMotion V6 IMU。控制时不用动捕，OptiTrack 只用于初始对齐和离线评估。研究范围是局部高精度操作，故意保持机体姿态和支撑，不主动挪身子或换脚。",
+      "analysis_zh": "结果：真机两条分布内指令下，带末端 IMU 的策略相对名义控制器把 MoCap RMSE 分别降了 17.3% 和 28.0%，相对只靠本体感觉的残差策略再降 12.6% 和 15.9%。八个评估工况的平均 MoCap RMSE，相对名义控制器降 18.4%，相对本体感觉残差再降 10.1%；仿真里对应数字是 30.5% 和 5.5%，说明末端惯性反馈在真机上的额外收益更大。24 组控制器–轨迹组合里，正运动学重建和动捕之间的轨迹 RMSE 平均 12.61±2.15 mm，说明关节编码器和名义 FK 吃不到相当一部分真实末端误差。新意是把末端 IMU 直接送进残差策略，而不是只用来估计位姿。局限：不走全身、不换脚；论文页面未见开源代码。",
+      "relevance_zh": "几乎就是 GO2 + PiPER 的现成实验：本体、手臂品牌和自由度都对得上。如果 han 做站立抓取或末端画轨迹时总觉得“编码器到位了、末端却偏”，这篇文章给出了可复现的思路——末端加一颗 IMU，用残差策略补腿臂耦合误差，不必上动捕做闭环。要复现需要自己搭 Isaac Lab 模型和 IMU 安装；没有开源仓库，迁移成本主要在仿真对齐，但硬件改动很小，值得作为本周第一篇精读。",
+      "score": 9.6,
+      "priority": "高",
+      "tags": [
+        "四足机械臂",
+        "末端跟踪",
+        "残差强化学习",
+        "IMU",
+        "sim2real",
+        "Unitree Go2",
+        "AgileX PiPER",
+        "真机"
+      ]
+    },
+    {
+      "title": "Body Schema Policy: Body as the Vision–Action Interface for Efficient Robot Loco-Manipulation",
+      "authors": [
+        "Lechen Zhang",
+        "Chenyuan Chen",
+        "Muxin Zhou",
+        "Zewen He",
+        "Yoshihiko Nakamura"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.22713",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：全身 loco-manipulation 的最强策略往往有数十亿参数，还要对每个任务微调；人的算力有限，却能靠身体图式把看见的东西和怎么动组织起来。做法：Body Schema Policy（BSP）是一种模仿学习策略，把关节和连杆 token 放在运动学树上，用学到的螺旋运动在连杆间传特征，再让每个身体部位自己查询视觉证据，去条件化各自动作的去噪。项目页：https://www.lechen-zhang.com/BSP/。",
+      "analysis_zh": "结果：在 9 个仿真宇树 G1 全身任务上，约 35M 参数的 BSP 追平 Ψ0 基础模型（参数量约少 75 倍），成功率几乎是 Diffusion Policy 的两倍，出动作块也更快。真机 G1 用头部 RealSense D435i，经 HoloMotion v1.4 控 43 个关节，每项任务 15 条示教、10 个初始位姿：推车 8/10、脚开垃圾桶并投物 8/10，合计 16/20，优于 Ψ0 的 13/20 和 Diffusion Policy 的 3/20；部署表上 BSP 为 48.3M、每块 17.4 ms，Ψ0 为 2.63B、137 ms。Fetch 移动操作上与 π0.5 持平，并超过同规模策略。消融表明，去掉潜在身体图式后，两个 loco-manipulation 任务几乎失败。新意是把螺旋运动学 inductive bias 写进视觉–动作接口。局限：SIMPLE 评估种子有限；若全身控制器吃的是潜在空间指令（如 SONIC、BFM-Zero），这套图式会变弱。未见明确开源声明。",
+      "relevance_zh": "方法正好对准腿臂协同：用身体结构组织视觉和动作，而不是把所有希望寄托在超大 VLA 上。真机相机就是 D435i，示教量只有 15 条，对数据采集友好。平台是人形 G1 和轮式 Fetch，不是 GO2+PiPER，运动学树和全身控制器都要重做；若 han 在 PiPER 上跑 Diffusion Policy / ACT，可以先借鉴“按连杆查询视觉、按关节去噪”的接口，而不必先上几十亿参数的模型。",
+      "score": 8.7,
+      "priority": "高",
+      "tags": [
+        "loco-manipulation",
+        "模仿学习",
+        "Diffusion Policy",
+        "身体图式",
+        "Unitree G1",
+        "Fetch",
+        "RealSense D435i",
+        "真机"
+      ]
+    },
+    {
+      "title": "From Temperature-Limited to Battery-Limited Legged Locomotion",
+      "authors": [
+        "Raphaël Ségas",
+        "Balázs Opra",
+        "Léo Ghafari",
+        "Thomas Stewart"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.22231",
+      "categories": [
+        "cs.RO",
+        "cs.LG",
+        "eess.SY"
+      ],
+      "summary_zh": "问题：四足长时间走动常常不是电池先没电，而是少数关节电机过热关机。做法：作者在 Unitree Go2 上辨识了一个 13 节点集总热网络，用它预测各电机将达到的稳态温度，并把“降低最热的预测渐近温度”写成奖励；策略本身始终看不到温度。热时间常数远长于 RL 的信用分配窗口，但预测渐近温度会在一个步态周期内随扭矩和关节速度变化，所以策略能学会把热摊开。",
+      "analysis_zh": "结果：热模型在不同机体、步态、负重和速度上，12 个电机温度的平均 RMSE 低于 1°C。真机带 5 kg 负重、1 m/s 走，学习基线 19 分钟（1.1 km）就热关机；该策略走到电池耗尽，174 分钟（10.0 km），最热电机在 26°C 房间里仍低于关机阈值 14°C。无负重的工厂回路（含楼梯和坡道）上，基线 25 圈（6.2 km）过热，该策略一块电池跑完 47 圈（11.2 km），余量 22°C。48 小时真机记录已公开：https://doi.org/10.5281/zenodo.24274994。新意是不把温度送进观测，也能用可识别的热模型做长时步态。局限：作者计划后续弥补大负重下的 sim-to-real 差距；论文页面未见策略代码，公开的是热数据。作者来自 Woven by Toyota。",
+      "relevance_zh": "平台就是 Go2，而且是带负重长时间走的真机结果，对 GO2 EDU 驮 PiPER 这种“身上已经有额外重量”的设置非常有参考价值。如果站立操作没问题、一走电机就发烫，可以先看这篇的热模型和奖励设计。复现热模型有公开数据集；要把策略迁到自己的运动控制器上，需要自己接入奖励和仿真，作者未放出策略仓库。",
+      "score": 8.2,
+      "priority": "高",
+      "tags": [
+        "四足",
+        "热管理",
+        "强化学习",
+        "Unitree Go2",
+        "长时运动",
+        "真机",
+        "开源数据"
+      ]
+    },
+    {
+      "title": "ARMFUL: Learning Whole-Arm Grasp Configurations for Single-Arm Pickup of Large Objects",
+      "authors": [
+        "Xinyi Yu",
+        "Yunshuang Li",
+        "Daniel Seita",
+        "Gaurav S. Sukhatme"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.20692",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：箱子、篮子、椅子这类大件，夹爪往往抓不住或太重，但单臂仍可用肢体环抱、托住再提起；这类动作难遥操作，现成数据也很少。做法：先在仿真里于关节空间采样，用挤压和提起原语筛选，再做摇晃和外力压力测试，得到 WAG 数据集（793 个物体、170 万个关节配置）。ARMFUL 用物体点云条件的扩散模型生成整臂抓取构型，经碰撞与可行性过滤后，用 RRT-Connect 到达，再执行同一套挤压–提起。项目页：https://manipulation-armful.github.io/。",
+      "analysis_zh": "结果：仿真训练物体提升成功率 85.4%，留出物体 69.9%；真机 Franka Panda 对 10 件宜家物体 100 次试验成功提起 70 次。真机用五台深度相机（三台 Intel RealSense、两台 ZED），外参来自手眼标定，把部分点云变到机器人基座系后送给模型。新意是第一次大规模自动生成整臂抓取数据，再用扩散模型加规划完成真机拾取。局限：感知和动力学都有 sim-to-real 差距（远距离深度缺损、仿真里质量和摩擦统一、物体全是刚体）；所有物体共用一套手写的挤压–提起，不会按物体改动作。论文页面除项目站外未见代码仓库链接。",
+      "relevance_zh": "如果 PiPER 以后要抱箱子、搬篮子，而不是只靠平行夹爪捏小物，这篇给了数据集和“点云→整臂构型→规划”的流水线，真机也用了 RealSense 和手眼标定。但 PiPER 是 6 轴、工作空间比 Franka 小，环抱大件更紧，WAG 里的 7 轴构型不能直接搬。适合作为大物体抓取的方法参考，完整复现需要重做仿真数据和规划，成本不低。",
+      "score": 7.4,
+      "priority": "中",
+      "tags": [
+        "整臂抓取",
+        "扩散模型",
+        "点云",
+        "Franka",
+        "RealSense",
+        "手眼标定",
+        "真机"
+      ]
+    },
+    {
+      "title": "Right Goal, Wrong Body: Re-grounding Frozen VLAs under Actuation Shift",
+      "authors": [
+        "Umer Siddique",
+        "Peilang Li",
+        "Yongcan Cao"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.20244",
+      "categories": [
+        "cs.RO",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "summary_zh": "问题：VLA 在理想驱动下能给出想要的行为，但部署时一旦执行器变了——重新安装、机械磨损、指令延迟——同样的动作命令会变成另一种运动，任务失败甚至变得不安全。做法：ReGround 是一种推理期方法，VLA 保持冻结。它先用与任务无关的 motor babbling 学习当前机器人的动力学，再在靠近策略自身计划的前提下跟踪其意图运动；只在检测到偏差时启用，不需要奖励、示教或重新训练。项目与开源：https://umersiddique94.github.io/ReGround/。",
+      "analysis_zh": "结果：在两种 VLA、八个 LIBERO 任务、五种偏差设置下，ReGround 能把成功率拉回接近 oracle；例如在 400 ms 延迟下，把 π0.5 的成功率从 0.16 提到 0.90，且比线性标定基线更安全。新意是把“驱动变了”从微调问题改成推理期再接地，数据只来自任务无关的随机运动。局限：正文评估在 LIBERO 上，未见真机实验；对真实安装误差、磨损和延迟是否同样有效，还要在机器人上验证。",
+      "relevance_zh": "对 GO2+PiPER 很实际：臂重新装过、手眼标定微偏、控制周期变慢，都可能让冻结 VLA 的动作对不上。ReGround 的卖点是不重训、用 motor babbling 适应当前机。代码开源，可先在仿真里接 π0/π0.5 再考虑搬到 PiPER；不要期望论文里的 LIBERO 数字直接等于真机结果。",
+      "score": 7.3,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "推理期适应",
+        "驱动偏差",
+        "延迟",
+        "LIBERO",
+        "开源"
+      ]
+    },
+    {
+      "title": "Multi-CONDOR: Learning Multistable Motion Primitives from Demonstration",
+      "authors": [
+        "Gabriele Giuseppe Di Marzo",
+        "Mariano Ramírez Montero",
+        "Maximilian Stölzle",
+        "Rodrigo Pérez-Dattari",
+        "Cosimo Della Santina"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.21059",
+      "categories": [
+        "cs.RO",
+        "cs.AI"
+      ],
+      "summary_zh": "问题：基于动力学系统的运动策略有稳定性和收敛保证，但很多操作任务有多个合理目标（比如容器的两个把手），或有一段可接受的目标轮廓；怎样在同一套连续自治动力学里同时保住这些选择，还没有统一做法。做法：multi-CONDOR 在 CONDOR 上扩展，用模仿学习损失让学到的任务动力学对齐潜在参考系统，后者编码多个离散吸引子或一条连续吸引轮廓，并给出 Lyapunov 意义下的收敛分析。",
+      "analysis_zh": "结果：仿真里，相对“分别学单目标原语再用状态机切换”，轨迹 RMSE 约降 72%；两目标和三目标任务中，落到容差外的初始状态比例从 StableNODE 的 0.31% 和 7.29% 降到 0%。Franka Emika 真机上，用示教学到的运动能抓住容器的任意一个把手。新意是把多目标和连续目标轮廓放进同一个带收敛保证的向量场。局限：论文页面未见开源代码；真机演示是抓取容器把手，定量对比主要在仿真。",
+      "relevance_zh": "抓取时常有多个可抓点，用状态机硬切并不优雅。如果 han 在 PiPER 上做示教到可反应运动（接近、对准、抓取），可以借鉴“一个策略收敛到多个合法目标”。迁移需要在 PiPER 上重新采集示教并实现 CONDOR 训练；没有开源仓库，适合作为方法阅读，而不是下周就能跑通的代码。",
+      "score": 7.1,
+      "priority": "中",
+      "tags": [
+        "模仿学习",
+        "运动原语",
+        "多吸引子",
+        "抓取",
+        "Franka",
+        "真机"
+      ]
+    },
+    {
+      "title": "Hidden Variables Behind Real-Robot Data Quality: Lessons from Hundreds of Thousands of Hours",
+      "authors": [
+        "Maniformer Real-World Manipulation Team",
+        "Che Tsang Calvin",
+        "Xingyu Chen",
+        "Bowen Jiang",
+        "Naixiang Gao",
+        "Xiongfeng Cai",
+        "Enlin Gu",
+        "Ruiying Li",
+        "Peize Li",
+        "Mianrui Zhu",
+        "Haomiao Zhang",
+        "Xin He",
+        "Minhui Yu",
+        "Jun Zhao",
+        "Zihao Zhu",
+        "Yang Chen",
+        "Jingmei Jin",
+        "Keru Zhou",
+        "Chen Wang",
+        "Chang Zhou",
+        "Zhiwen Hou",
+        "Di Yang",
+        "Wenjun Sun",
+        "Fan Yang",
+        "Liyan Zhang",
+        "Yi Lu",
+        "Haojun Ma",
+        "Jun Zhu",
+        "Pengxin Zha",
+        "Zhaosheng Wang",
+        "Xin Zhao",
+        "Xindong He",
+        "Chiming Liu",
+        "Jianheng Song",
+        "Jiayao Ma",
+        "Maoqing Yao",
+        "Guanghui Ren",
+        "Qian Wang",
+        "Wei Shan",
+        "Yang Yang",
+        "Li Liu",
+        "Wenhao Wang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.22388",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：真机数据规模变大之后，采集系统设计会同时影响操作员效率和策略学到的行为；工作空间限制、手柄别扭、延迟，都会把停顿、绕路和修正动作写进看起来成功的示教里。做法：作者从具身、遥操作控制和数据一致性三条线入手，对 25 款双臂机器人做运动学可达研究，再做受控遥操作实验，并用微调后的 π0.5 策略做真机评估。",
+      "analysis_zh": "结果：只看位置可达会高估考虑姿态后的任务覆盖，肩部一点点运动就能明显扩大有效工作空间。遥操作上，身体部位并行控制把完成时间缩短 43–53%；柔顺控制在受约束和接触丰富的任务上提高成功率、降低峰值接触力。策略实验表明，示教必须包含动作决策所依据的视觉信息：主动搜索的示教把选臂准确率从随机的 50% 提到 100%。标定方面，训练数据里混进不同标定、但推理时仍保留与推理对齐的子集时，在作者测试配置下仍可用；若推理时标定错了，30 次试验全部失败。策略还会保留绕路示教里约 90% 的额外路径长度。新意是把采集系统的“隐藏变量”和下游策略行为连起来。局限：具身分析主要基于 URDF 和离散 IK；控制和数据实验的任务、操作员和策略都比较窄。",
+      "relevance_zh": "如果 han 要在 GO2+PiPER 上采遥操作数据训 π0 或类似策略，这篇更像一份采集检查清单：先看有效工作空间（不要只看位置够不够），减少手柄延迟和绕路，保证示教里能看见决策依据，训练与推理的手眼标定必须对齐。25 款双臂的运动学研究里包含 AgileX Dual Piper 和 Dual PiperX，但那是 URDF 工作空间分析，不等于作者在 PiPER 上训了 π0.5。可当数据采集规范来读，不必指望直接复现其全部实验。",
+      "score": 7,
+      "priority": "中",
+      "tags": [
+        "遥操作",
+        "数据采集",
+        "数据质量",
+        "π0.5",
+        "工作空间",
+        "手眼标定",
+        "AgileX Piper"
+      ]
+    },
+    {
+      "title": "SG-ODOM: Event-Driven Proprioceptive State Estimation with Stability-Gated Contact Updates for Legged Robots",
+      "authors": [
+        "Francesco Iotti",
+        "Chiyun Noh",
+        "Franco Angelini",
+        "Manolo Garabini",
+        "Ayoung Kim",
+        "Maurice Fallon",
+        "Frank Dellaert"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.20710",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：腿式本体感觉里程计把 IMU 和腿部运动学融合时，通常假设支撑脚静止；但脚刚触地、载荷还在转移时，这个假设并不成立，同一接触相位里反复做运动学修正，可能引入冗余或不可靠信息。做法：SG-ODOM 用稳定性门控来安排运动学更新——物理触地之后，等脚达到足够稳定的支撑才接纳该接触，用这次通过验证的触地事件触发估计器修正，并用超时更新限制纯 IMU 积分的最长时间。代码：https://github.com/ori-drs/SG-ODOM。",
+      "analysis_zh": "结果：在 GaRLILEO（波士顿动力 Spot）、GrandTour（ANYmal D）以及作者自采的宇树 G1 数据上，与代表性本体感觉估计器和厂商估计器对比；在 GrandTour 室外序列上，相对位姿误差（RPE）最多比基线估计器低 25%。实现基于 GTSAM，同时提供 InEKF 和固定滞后平滑器，前端按机器人更换。新意是把“触地”和“可用于里程计的稳定支撑”分开，用事件触发而不是整段支撑都更新。局限：评估平台里没有 GO2；接触门控阈值和前端仍要按机体调试。",
+      "relevance_zh": "GO2 做移动操作时，本体感觉状态估计会直接影响基座位姿和手臂目标。SG-ODOM 开源、不依赖相机，思路可以迁到 GO2，但论文评估的是 Spot、ANYmal D 和 G1，需要自己写 GO2 运动学前端并调门控。适合在已有腿式估计器不稳定（触地冲击、打滑）时作为改进方案，不是即插即用。",
+      "score": 6.8,
+      "priority": "中",
+      "tags": [
+        "状态估计",
+        "本体感觉",
+        "里程计",
+        "腿式机器人",
+        "GTSAM",
+        "开源",
+        "Unitree G1"
+      ]
+    },
+    {
+      "title": "CADENCE: Learning Acyclic Gaits for Model-Based Quadruped Locomotion",
+      "authors": [
+        "Owen Sullivan",
+        "Sourav Selvaraj",
+        "Mahdi Agheli"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.23102",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：基于模型的四足控制器通常跟着周期步态走，抬腿顺序和周期都是固定的，不管安全落脚点在哪。做法：CADENCE 是一个动作空间很小的学习式迈步规划器，每 40 ms 从至多 65 个离散选项里选一个——不迈步，或让一条腿迈向某个安全落脚点——并预测摆动时间。它在凸 MPC 之上用强化学习训练，奖励里没有步态项，唯一结构约束是同时摆动的腿不超过两条。再用逆落脚模型（IFM）把落脚点变成控制器命令；只重拟合 IFM（少于 2 万步），冻结的 CADENCE 就能接到 OCS2 的非线性 MPC 上。",
+      "analysis_zh": "结果：在 Unitree Go1 的仿真里，地形空洞率 26%–49%、速度 0.1 和 0.2 m/s，五多种子平均成功率 85.1%，对照 OCS2-Trot 67.8%、OCS2-Single 65.5%；把 CADENCE 限制成一次只摆一条腿时只有 39.6%。空洞率 49% 时为 72.9%，对照 Trot 的 43.0%。分析过的策略出现了无固定周期和顺序的非周期步态，但仍然成对使用对角腿。新意是用极小离散动作空间学出步态，并能靠 IFM 在不同 MPC 之间转移。局限：对照是未经调参的 OCS2 步态；非周期性来自一条策略的一次运行；论文是仿真，未见真机。作者也写明，重拟合需要在新控制器上记录迈步。",
+      "relevance_zh": "如果 han 在 GO2 上走稀疏落脚或障碍地面，并且已经有 MPC / OCS2 一类模型控制器，CADENCE 提供了“不写死步态表、用学习器决定迈哪只脚”的思路，Go1 仿真也比人形工作更接近 GO2。要复现需要自己接规划器和 IFM，还没有真机验证；对主要做站立抓取、少走复杂地形的阶段，优先级低于前面几篇腿臂和热管理论文。",
+      "score": 6.6,
+      "priority": "中",
+      "tags": [
+        "四足",
+        "步态规划",
+        "MPC",
+        "强化学习",
+        "Unitree Go1",
+        "OCS2",
+        "仿真"
+      ]
+    },
+    {
+      "title": "Cooperative Mobile Manipulation using Learned Dynamical Systems",
+      "authors": [
+        "Saray Bakker",
+        "Wendelin Böhmer",
+        "Javier Alonso-Mora"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.21198",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：两台移动操作机器人一起干活时，既要协调运动和全身避障，又不能把各自从示教里学到的行为改丢。做法：CALDS 先为单机学习动力学系统（DS），再通过协作策略选择找出相容的策略组合，并用时间适配在保持原行为空间结构和收敛性的同时做无碰撞协作。评估场景包括辅助穿衣、餐厅清洁上菜、开抽屉并放入物体。视频：https://youtu.be/9AiIJNsJPlQ。",
+      "analysis_zh": "结果：实验全部在仿真中进行，平台是 Clearpath Dingo 全向底盘加 Kinova Gen3 Lite，共 9 自由度；每个场景 200 次随机试验。作者报告 CALDS 的两种实现把成功率提升到 91–100%，全身避碰分别为 100% 和 99.5%，路径偏离也小于基于 CBF 的对照；对照在餐厅场景成功率明显下降。作者写明将在发表后开源代码。新意是把已学习的单机 DS 适配成双机协作，而不是重新采一轮协作示教。局限：没有真机；任务时序在餐厅场景里约束不强；作者也指出，在不确定动态环境里仍可能需要 10–100 Hz 的底层规划。",
+      "relevance_zh": "和 han 当前的单机 GO2+PiPER 设定距离较远：这是轮式底盘上的双机协作，而且只有仿真。可借鉴的是“先学单机可收敛运动，再做时间上的避障适配”，以后若两台移动臂协作或人机协作可以回来看。现在不必优先复现。",
+      "score": 6.4,
+      "priority": "中",
+      "tags": [
+        "移动操作",
+        "动力学系统",
+        "多机协作",
+        "模仿学习",
+        "仿真"
+      ]
+    }
+  ]
+}

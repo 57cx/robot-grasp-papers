@@ -1,0 +1,286 @@
+{
+  "date": "2026-11-19",
+  "source_query": "基于 data/arxiv_raw/2026-11-19.json（arXiv API 自动抓取，回溯 7 天，窗口 2026-11-12 11:57 至 2026-11-19 11:57 北京时间）。该文件共 30 篇未解读候选；从中选出与腿臂操作、精细抓取、四足控制、VLA 部署及 GO2+PiPER 最相关的 10 篇，每篇标题、作者已对照 arxiv.org/abs 摘要页核对一致。解读当日（2026-11-20）的 raw 文件在本次解读时尚未出现在 main。",
+  "overview_zh": "这批 30 篇候选里，最对得上硬件的是两篇。上海交大的 GTI 把长程任务意图钉在当前可执行的子任务和阶段上，并在松灵 AgileX PiPER 6R 上做了柜子开合取放、彩椒–香蕉对调、猕猴桃搜索放置：用 π0.5 做执行器，全任务成功率从 21.7% 拉到 59.2%，真机规划器吃了 1000 条成功遥操作示范。另一篇 WAM-Policy 把面向机械臂的世界动作模型迁到「无臂、前腿当末端」的语言条件四足 loco-manipulation，真机是 Unitree Go2 Air，机载相机加头顶 RealSense D435i，纯仿真训练、零真机数据；按按钮、踢球、推箱子三项合计 7/30，闭环还没跑到实时，但代码和项目页已经公开。方法上，WACO 把少样本 VLA 对「相机被碰 / 基座重停」的失效写成同一件事——相机到基座外参变了，用单帧 RGB-D 和手臂正运动学把图像与动作拉回标定坐标系，这对 GO2 一动、相机一晃就偏的场景很实用。抓取侧有任务导向重排序 LAGR，以及把第一人称视频转成可执行接触数据的 Ego2X。其余补交互模仿里对自主 rollout 的集合式重标注（SeRA，真机摘番茄）、不改原 VLA 的长程重规划（RePlan-VLA）、四足物体搜索（SearchDiffusion，ZSL-1 + RealSense D455）、带情景记忆的 flow 策略（RecallFlow），以及只用本体感觉估机体和地形高程的 SBEE。驾驶、血管介入遥操作、无人机导航、VLA 对抗补丁、大鼠运动神经回路等已排除。",
+  "items": [
+    {
+      "title": "GTI: Grounding Task Intent Throughout Long-Horizon VLA Manipulation",
+      "authors": [
+        "Tianqi Gong",
+        "Haochen Niu",
+        "Yusheng Zhao",
+        "Lantao Zhang",
+        "Haoyu Liu",
+        "Rendong Ying",
+        "Peilin Liu"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.23926",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：VLA 一次只出局部动作，长程操作时全局任务意图容易和当前该执行的子任务、阶段对不上。做法：GTI 用当前观测和执行历史定位正在进行的子任务及其阶段，为同一局部子任务生成两类阶段相关的视觉目标（交互/接触态、局部完成态），再和局部语言指令一起条件化 VLA；执行中若持续偏离，则通过回退、重新观察和阶段再评估做局部恢复。仿真评测在 RoboCasa365 和 VLA-Arena Horizon-Long；真机是 AgileX PiPER 6R，三个任务为柜子搜索放置、彩椒–香蕉对调、猕猴桃搜索放置，规划器使用 1000 条成功遥操作示范。",
+      "analysis_zh": "结果：相对配套的 Global-FT，GR00T 在 RoboCasa365 已见组合任务上的成功率从 14.6%/12.1% 提到 31.8%/20.4%（ID/OOD）。VLA-Arena 上 GTI+π0.5 总体成功率为 47.6%，高于改过的 ForeAct 的 45.2%，在更难的 L1/L2 上分别高 5.2 和 6.0 个百分点。真机每个条件 30 次，三个任务全任务成功率从 21.7% 提到 59.2%：柜子短程 13/30→15/30，四阶段柜子 0/30→12/30，对调 4/30→23/30，猕猴桃 9/30→21/30，增益主要来自多步条件，小把手仍是柜子任务的主要失败点。新意是把意图定位、阶段视觉里程碑和失败触发的局部恢复串成可换执行器的框架。局限：复杂留出任务和跨场景泛化仍难；阶段划分偏粗，局部恢复不做全局重规划；Wan 视觉目标一次刷新约 1.25–1.36 秒且期间底层执行会停；论文页面未见开源代码。",
+      "relevance_zh": "真机就是松灵 AgileX PiPER 六轴，任务也是开柜子、换水果、搜索放置，和 han 的手臂与精细操作课题直接对得上。如果已经在采 PiPER 的遥操作数据、准备微调 π0.5 或类似 VLA，可以先借鉴它的「局部指令 + 阶段目标图 + 失败就回退再看」这一套，不必一上来复制 Qwen 和 Wan 的重规划栈。没有看到开源仓库，复现成本主要在自己标注阶段和训练视觉目标；也还没接到四足移动基座上，迁到 GO2+PiPER 时要另外处理机体移动带来的视角变化。",
+      "score": 9.4,
+      "priority": "高",
+      "tags": [
+        "VLA",
+        "长程操作",
+        "视觉目标",
+        "遥操作",
+        "AgileX PiPER",
+        "π0.5",
+        "真机"
+      ]
+    },
+    {
+      "title": "WAM-Policy: World Action Models with On-Policy Distillation for Quadrupedal Loco-Manipulation",
+      "authors": [
+        "Junlin Long",
+        "Xu Deng",
+        "Yiran Wang",
+        "Yue Yang",
+        "Yang Zhao",
+        "Zeyu Zhang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.24011",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：无臂四足可以用三条腿走路、一条前腿操作，但还没有能听语言指令的这类策略；现成的世界动作模型（WAM）是为机械臂预训练的，而且采样慢。做法：分两阶段把臂式 WAM 变成四足 loco-manipulation 策略。第一阶段做跨形态迁移，再用 on-policy self-distillation（OPSD）蒸馏成「1 步视频 + 2 步动作」的学生策略；第二阶段用强化学习把教师调成任务专家，再以 multi-teacher on-policy distillation（M-OPD）合并成一个少步学生。作者同时做了 QLM-Bench：10 个仿真任务、1000 条无需遥操作合成的示范。",
+      "analysis_zh": "结果：迁移后的教师在 QLM-Bench 上成功率 77.0%；OPSD 学生保持 76.7%，采样快 14 倍；任务强化学习再经 M-OPD 合并后到 85.0%。真机部署的是 OPSD 学生，平台为 Unitree Go2 Air，自我视角用机载相机、俯视用 RealSense D435i，全身控制器是 RAMBO，策略在工作站 RTX 5070 Ti 上通过有线以太网推理，训练全程只有仿真数据。三个任务各 10 次：按按钮 3/10、踢球 1/10、推箱子 3/10，合计 7/30。采样一个 chunk 只要 0.159 秒，但含观测编码的闭环要 0.66 秒，超过 chunk 覆盖的 0.32 秒，机器人只能在两次输出之间保持上一条指令。新意是跨形态把臂式 WAM 迁到前腿操作，并用 on-policy 蒸馏把慢教师压到可部署。局限：第二阶段只调了两个任务；只在一种四足、一种全身控制器、一条操作腿上验证；真机成功率明显低于仿真，闭环也还没到实时。代码与项目页已公开：https://github.com/AIGeeksGroup/WAM-Policy 、https://aigeeksgroup.github.io/WAM-Policy/。",
+      "relevance_zh": "本体是宇树 Go2 系列，头顶正好是 D435i，和 han 的相机配置很近，值得看它的双视输入、仿真合成示范和 sim2real 落差。但关键差别是：这是「前腿当末端」的无臂 loco-manipulation，不是 GO2 EDU 上挂 PiPER。不能直接搬策略，更适合借鉴跨形态蒸馏和 QLM-Bench 的任务设计，或对比「用腿操作」和「用臂操作」各自在哪些任务上更合适。仓库已开源，复现路径清楚，但真机 7/30 和 0.66 秒闭环说明直接上 Go2 还要补真机数据和把编码加速。",
+      "score": 8.8,
+      "priority": "高",
+      "tags": [
+        "loco-manipulation",
+        "四足",
+        "世界动作模型",
+        "蒸馏",
+        "sim2real",
+        "Unitree Go2",
+        "RealSense D435i",
+        "开源",
+        "真机"
+      ]
+    },
+    {
+      "title": "Towards Pose-Robust Few-Shot Vision-Language-Action Models",
+      "authors": [
+        "Wenhao Li",
+        "Zhongyi Han",
+        "Yuhao Wei",
+        "Liang Han",
+        "Yilong Yin",
+        "Liqiang Nie"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.24360",
+      "categories": [
+        "cs.RO",
+        "cs.AI",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：用几十条示范微调 VLA 后，策略默认相机和机器人基座还停在采集时的位置，三脚架被碰一下、基座重停偏几厘米，就会伸向错误位置。作者把这两种失效写成同一件事：策略记住的相机到基座外参变了。做法：提出 WACO，用当前关节角的正运动学把手臂当成度量标定物，用静态场景当世界锚，区分是相机动了还是基座动了；只需单帧 RGB-D，不需要外参真值或额外数据，把图像拉回标定视角，把状态、动作和起始位姿拉回标定基座系，并在估计器自身的误差下微调原策略。同时提出 LIBERO-PoseShift 基准，覆盖分级的相机、基座和复合偏移。",
+      "analysis_zh": "结果：在 LIBERO-PoseShift、LIBERO-Plus 的相机轨道以及 UR5e 上的四个真机任务中，WACO 持续超过标准少样本微调和已有视角鲁棒方法：仿真中偏移条件下的成功率提高 13.2 个百分点，真机提高 36.7 个百分点，分别收回与外参真值预言机差距的 90% 和 87%；在不使用受扰训练数据、测试时也不另做标定的方法里达到新的最好水平。新意是把相机偏移和基座重停统一成外参问题，并用「手臂 + 静态场景」在单帧 RGB-D 上同时估计。项目页：https://peacelwh.github.io/WACO/。局限：真机验证在固定基座的 UR5e 上，不是移动操作平台；对连续行走中的外参时变，论文没有单独作为四足场景评测。",
+      "relevance_zh": "GO2 一走动、D435i/D405 一重新安装，少样本 VLA 最容易出现「看着对、手伸偏」。WACO 只要求 RGB-D 和手臂正运动学，和现有 RealSense + PiPER 的传感器清单对得上，思路可以直接借来做手眼/外参漂移的补丁。要注意它的真机是 UR5e 固定基座，迁到四足时腿部顺从和机体摆动会让「静态场景锚」没那么静，需要自己验证。项目页在，可先看方法和可视化再决定是否复现。",
+      "score": 8.5,
+      "priority": "高",
+      "tags": [
+        "VLA",
+        "外参",
+        "RGB-D",
+        "手眼标定",
+        "少样本",
+        "UR5e",
+        "真机"
+      ]
+    },
+    {
+      "title": "LAGR: Language-Aware Grasp Re-Ranking for Task Oriented Grasping",
+      "authors": [
+        "Manav Kulshrestha",
+        "Shreyans Jain",
+        "Apoorva Vashisth",
+        "Ankush Gupta",
+        "Damon Conover",
+        "Aniket Bera"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.23858",
+      "categories": [
+        "cs.RO",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "summary_zh": "问题：抓哪取决于后面要干什么，比如锤子锤东西要握柄、递出去要握头；既要在物体上物理可行，又要符合任务。现有任务导向抓取数据往往规模小、偏合成，或标注昂贵。做法：先建了一个数据集，在 17 类物体、100,911 个图像–任务对上提供 268 万条带评分的 5 自由度抓取标注。方法 LAGR 先生成与任务无关的抓取提议并给出物理可行性分数，再用语言条件的重排序器在全部提议之间一起打分。",
+      "analysis_zh": "结果：实验中 LAGR 比次优方法高出 9.3 个百分点；作者还在 Franka Research 3 上对真实物体执行了任务导向抓取作为验证。新意是把「先出可行抓取、再用语言在候选集合上重排」拆开，并配上一套规模明显更大的真实观测标注。局限：抓取是 5 自由度而不是完整 6 自由度位姿；真机是桌面式 Franka，不是移动操作；论文页面未见可直接迁移到 PiPER 的开源推理包说明。",
+      "relevance_zh": "和 han 的末端精细抓取直接相关：先出一批可行抓取，再用任务语言选该握哪，适合接到 PiPER 的抓取检测前面做重排序。数据是图像–任务对上的 5-DoF 标注，用 D435i/D405 的 RGB（加深度的话还要自己接）有希望试用，但要从 Franka 迁到 PiPER，手眼标定、夹爪几何和 5-DoF 到手臂逆解都得自己做。可先读方法和数据定义，再决定是否跟他们要数据或自己按同样协议标一小批。",
+      "score": 8,
+      "priority": "高",
+      "tags": [
+        "任务导向抓取",
+        "抓取检测",
+        "视觉语言",
+        "Franka",
+        "真机"
+      ]
+    },
+    {
+      "title": "Ego2X: Contact-aware Transfer from Egocentric Human Data to Any Robot",
+      "authors": [
+        "Xinke Lyu",
+        "Bowen Yang",
+        "Zhicheng Wang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.24138",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：真机交互数据贵，已有「第一人称视频→机器人」流水线主要看动作是否看起来像，结果经常是手指悬在物体旁边、夹爪在空中闭合。做法：Ego2X 以物体为中心，把单目第一人称视频转成灵巧手和平行夹爪都能执行的数据。核心表示 CORE 在物体表面记录接触锚点、相对力、抓取模式和交互状态，用来纠正手–物漂移、引导逆解去实现必须发生的接触，并在抹掉人手、合成机器人画面时保住被抓物体。",
+      "analysis_zh": "结果：在 HOT3D 上，接触驱动的校正把接触中的手部深度误差降低 33.7%；在 EgoDex 上，接触驱动重定向实现了 62.9% 的标注接触，高于官方 HuRo 流水线的 27.9%。在 RoboTwin 2.0 中，仅用 Ego2X 片段对 X-VLA 做后训练、不加仿真示范，任务成功率从零样本 40.5% 提到 67.0%（200 个成对场景）。作者表示将公开转换流水线和带 CORE 标注的数据集。新意是用物体上的接触，而不是视觉外观，来衡量和约束迁移。局限：目前的后训练验证在仿真基准上，平行夹爪迁到具体真机仍要过手眼和接触模型这一关。",
+      "relevance_zh": "如果 han 不想把所有数据都靠 PiPER 遥操作攒，这是一条用头戴/第一人称视频补抓取接触数据的路，而且明确支持平行夹爪。等仓库和数据放出后，值得拿几条日常操作视频试转换，再在仿真或 PiPER 上做小规模后训练。现在还不能当现成数据集用；和 GO2 移动基座也还没有直接接口，先当数据采集方法看。",
+      "score": 7.6,
+      "priority": "中",
+      "tags": [
+        "数据采集",
+        "接触",
+        "第一人称视频",
+        "平行夹爪",
+        "VLA",
+        "模仿学习"
+      ]
+    },
+    {
+      "title": "Old Experience, New Lessons: Relabeling Autonomous Robot Rollouts in Interactive Imitation Learning",
+      "authors": [
+        "Zhaoting Li",
+        "Cosimo Della Santina",
+        "Jens Kober"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.24273",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：交互式模仿学习在部署时会拿到稀疏的人类修正，以及大量没有人类动作标签的自主执行经验；已有方法要么不用这些经验做动作监督，要么去模仿历史上的机器人动作，可能把次优行为强化回去。做法：提出 SeRA，用后续策略检查点给这些自主经验重标注，再用检查点之间的一致性做过滤；因为一致不等于正确，它在被接受的重标注周围构造期望动作集合，并按 Set-Supervised Diffusion Policy（SDP）训练动作块扩散策略，让集合内动作的概率上升，同时用步进掩码的去噪损失把重标注和已有人类修正拼进部分监督的 chunk。",
+      "analysis_zh": "结果：在五个仿真操作任务的在线和离线设置中，SeRA 超过 SDP，也超过模仿历史机器人动作或精确重标注的基线。真机摘番茄任务上，同样的人类反馈和训练预算下，SeRA 成功率为 80%，SDP 为 40%。新意是把「后来的策略」当成对旧自主经验的集合式监督，而不是当单点专家标签。局限：过滤依赖检查点一致，早期策略很差时能用的重标注可能不多；真机只展示了一个采摘任务。",
+      "relevance_zh": "如果 han 已经在 PiPER 上做 DAgger/干预式示教，这篇文章直接回答「机器人自己跑出来的大量轨迹怎么用」。思路不绑特定本体，扩散策略也可以接到现有模仿学习管线。真机是摘番茄，和精细抓取接近，但要复现需要保存策略检查点并改训练损失，不是即插即用的控制器。",
+      "score": 7.5,
+      "priority": "中",
+      "tags": [
+        "模仿学习",
+        "交互式学习",
+        "Diffusion Policy",
+        "数据重标注",
+        "真机"
+      ]
+    },
+    {
+      "title": "RePlan-VLA: Progress-Aware Replanning for Long-Horizon Vision-Language-Action Models",
+      "authors": [
+        "Apoorva Vashisth",
+        "Manav Kulshrestha",
+        "Damon Conover",
+        "Zachary Kingston",
+        "Aniket Bera"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.23843",
+      "categories": [
+        "cs.RO",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "summary_zh": "问题：VLA 在需要多步、互相依赖的长程操作上容易掉性能；作者认为不必让同一个策略同时负担长程推理、记忆、动作生成、进度跟踪和故障恢复。做法：提出与具体 VLA 无关的框架 RePlan-VLA，把 VLA 当短程技能用，外面包一层执行感知的重规划：明确监控机器人运动以评估进度，再根据观察到的结果改写后续计划。底层 VLA 完全保持原样，不再额外微调。",
+      "analysis_zh": "结果：在 RoboCasa365 和 CALVIN 上，成功率分别比次强基线高 21.9% 和 10.4%；作者还在 Franka Research 3 上做了真机部署验证。新意是把长程职责从 VLA 里拆出去，强调「不改原策略也能把短程能力接成长程」。局限：摘要未给出真机任务的详细成功率和开源地址；进度监控和改写计划的质量会成为新的单点，规划错了 VLA 也救不回来。可与同日的 GTI 对照：GTI 改的是给 VLA 的局部条件并做了执行器适配，RePlan-VLA 则声称完全不微调 VLA。",
+      "relevance_zh": "和 GTI 是同一天里两条可对比的长程 VLA 路线。如果 han 已经有一个还能用的短程 π0.5/ACT 策略，不想重训，可以先看 RePlan-VLA 这种外包监控和重规划是否更轻。真机是 Franka 不是 PiPER，迁过去主要是把进度判定和失败条件改成自己的任务；论文若后续不放代码，需要按框架自己实现监控逻辑。",
+      "score": 7.4,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "长程操作",
+        "重规划",
+        "Franka",
+        "真机"
+      ]
+    },
+    {
+      "title": "SearchDiffusion: Information-Guided Diffusion Planning for Object Search",
+      "authors": [
+        "Sausar Karaf",
+        "Dmitrii Plotnikov",
+        "Alexey Kotcov",
+        "Dzmitry Tsetserukou"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.24375",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：在未知环境里找物体，既要采集有用观测，又要避障，还得考虑传感器视野有限。做法：SearchDiffusion 是一个扩散规划器，用学出来的稠密效用图（几何可达、有用可见性、语义进度）来生成位置和朝向轨迹，并作为采样引导的目标；再配合地图假设、几何/朝向引导、可行性检查和解析选择。真机用 OneMap 的相关性地图，不在真机数据上微调。",
+      "analysis_zh": "结果：仿真 24 张地图、90 个任务上，目标发现率为 95.6%，计算开销更大；消融显示效用图和引导互补，运行时地图假设对发现率的额外帮助有限。真机是 ZSL-1 四足，传感器为 Livox MID-360 激光/IMU 和 Intel RealSense D455，GLIM 建图和轨迹执行在 16 GB Jetson Orin NX 上，扩散模型和 OneMap 在外接 RTX 4090 上；10 次试验中操作员判定成功 8 次。新意是把搜索效用写成稠密地图，再引导扩散轨迹。局限：真机成功靠操作员评估、样本只有 10 次；扩散规划在板载录制输入测试下单次约 3.6–3.8 秒，实时性一般。",
+      "relevance_zh": "对 GO2 做「先找到再抓」有启发，尤其是朝向和可见性一起规划。但平台是 ZSL-1，相机是 D455 不是 D435i/D405，而且还用了 Livox 和 OneMap，不能直接当 GO2 的搜索栈来跑。若只想在实验室里找桌上或房间里的目标，可以借鉴效用图思想，用 RealSense 自己做更轻的探索策略，不必先上激光。",
+      "score": 7.2,
+      "priority": "中",
+      "tags": [
+        "物体搜索",
+        "扩散规划",
+        "四足",
+        "RealSense",
+        "sim2real",
+        "真机"
+      ]
+    },
+    {
+      "title": "RecallFlow: Episodic Memory as the Source Distribution of Generative Robot Policies",
+      "authors": [
+        "Xuji Zhang",
+        "Qilin Zhong",
+        "Zichen Zhang",
+        "Wei Zhai",
+        "Jian Di",
+        "Kun Li",
+        "Yang Cao",
+        "Wenjun Lv"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.23731",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：扩散/flow-matching 策略做视觉运动模仿学习已经很常见，但在「目标当前看不见、必须靠记忆」的任务里，已有方法只是把观测历史当作额外条件，动作仍然从高斯噪声出发，策略既要从冗长历史里挑出目标，又没有一个靠近记忆目标的生成起点。做法：RecallFlow 用情景记忆来构造源分布：Recall-Relocalization 用少量 recall slot 把记忆对齐到当前视野，Recall Anchors 再把每个 slot 变成源分布里的一个高斯分量，让生成从接近目标动作的地方出发；传输网络随后只靠当前观测把动作补完，推理开销接近无记忆策略。",
+      "analysis_zh": "结果：在公开的 MIKASA-Robo 记忆基准上，平均成功率 80.4%，据作者称是当时最好；在他们按记忆负荷分组的任务套件上比最强基线高 20.3 个百分点，在四个真机任务上高 18.8 个百分点。新意是把记忆写进 flow 的源分布，而不是只当作条件。局限：摘要未展开四个真机任务的平台和物体细节，也未给出开源地址；记忆槽对齐若在移动相机下失败，源分布本身会偏。",
+      "relevance_zh": "移动操作里很常见「刚才看到、现在被挡或走出视野」——比如 GO2 转到侧面再伸 PiPER。RecallFlow 提供了一种在扩散/flow 策略里用记忆引导动作的方法，值得在做 ACT/Diffusion Policy 时对照。没有核到开源代码和具体真机型号，复现要自己实现 recall 模块；先读方法，等有代码或补丁再在 PiPER 上试「先看后抓」类任务。",
+      "score": 7,
+      "priority": "中",
+      "tags": [
+        "模仿学习",
+        "Flow Matching",
+        "情景记忆",
+        "操作策略",
+        "真机"
+      ]
+    },
+    {
+      "title": "Proprioceptive Simultaneous Base and Terrain Elevation Estimation for Legged Robot Locomotion",
+      "authors": [
+        "Michael Maravgakis",
+        "Stylianos Piperakis",
+        "Panos Trahanias"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.24310",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：视觉退化时腿式机器人只能靠本体感觉，此时全局位置和偏航不可观；竖直方向的漂移尤其危险，会把摆动腿轨迹的高度参考带偏，甚至让机器人失稳。做法：把地形本身当成持续的本体感觉路标，每一步落脚都是一次高度观测。SBEE 把浮动基座的左不变扩展卡尔曼滤波（LI-EKF）和栅格高程地图做成双向环：稳定触地把带不确定度的高度写入地图，已经建过的格子再作为加权的竖直伪测量反馈回来，类似回环。滤波器吃的是运动学速度而不是每条腿一个接触状态，所以状态维数不随腿数增加。",
+      "analysis_zh": "结果：在 MuJoCo 的四足和双足平台，以及 ANYmal-D GrandTour 数据集上 296 米行走中评估，相对三个本体感觉状态估计 SOTA 里最好的一个，绝对轨迹误差下降 22.1%。新意是把高程地图和基座估计做成类 SLAM 的闭环，且状态维数与腿数无关。局限：正文写明实现将在录用后开源（C++17 核心、Python 绑定、兼容 ROS/ROS2），目前还不能当现成包来装；评估主体是 ANYmal-D 数据集和仿真，不是宇树真机；偏航和水平位置仍然不可观，它主要稳住的是竖直轴。",
+      "relevance_zh": "GO2 在做站立或行走抓取时，如果摆动腿高度或机体竖直估计漂了，手臂末端也会一起偏。SBEE 只靠 IMU、关节和接触，不依赖 D435i，适合作为视觉失效时的备份，或给全身控制提供更稳的高度参考。等代码放出后，值得在 GO2 EDU 上对比宇树自带的状态估计；现在只能先读方法和数据集结果，不能直接复现。",
+      "score": 6.8,
+      "priority": "中",
+      "tags": [
+        "状态估计",
+        "本体感觉",
+        "高程地图",
+        "腿式机器人",
+        "ROS2"
+      ]
+    }
+  ]
+}

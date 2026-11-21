@@ -1,0 +1,321 @@
+{
+  "date": "2026-11-20",
+  "source_query": "基于 data/arxiv_raw/2026-11-20.json（arXiv API 自动抓取，回溯 7 天，窗口 2026-11-13 11:51 至 2026-11-20 11:51 北京时间）。该文件共 28 篇未解读候选；从中选出与腿臂操作、精细抓取、移动操作、VLA 部署及 GO2+PiPER 最相关的 10 篇，每篇标题、作者已对照 arxiv.org/abs 摘要页核对一致。解读当日（2026-11-21，周六）的 raw 文件在 main 上尚未出现。",
+  "overview_zh": "这批 28 篇候选里，和硬件贴得最近的是 MIR-Depth：哈尔滨工程大学等在松灵 AgileX PIPER 六轴加腕部 RealSense D435i 上做透明物体单目 RGB-D 补全，再交给 GraspNet 出 6-DoF 抓取。TransCG（含 D435 场景）上 MAE/RMSE 到 6.833/10.504 mm，低于 ReMake 的 8.040/11.363 mm；真机评测目前是定性对比，代码和预训练权重还写着即将公开。方法线上，WEVO 用视频世界模型给全身人形 VLA 做无遥操作后训练，Unitree G1 三项 loco-manipulation 真机成功率从行为克隆的 23.3% 拉到 75.0%，高于同预算真机 RL 的 48.3%，但接口绑在 G1 上，不能零样本迁到四足加臂。M4M 则专门解决「冻住的操作策略要先把基座挪到好用的站位」：在未见过的 RoboCasa 厨房 8 个铰接任务上到 47.0%，强基线 N2M 是 26.5%，不过还没有真机。工程上，TU Delft 给出 Dingo-O+Kinova+D455 的单手柄遥操作和 Zarr 出数流水线并开源；Homeward 用训练视角把被碰过的第三人称相机拉回去，LIBERO-Plus 上 π0.5 从 76.5% 到 95.1%，但还停在仿真。力控侧有 FR3 移动臂的分层导纳–阻抗搬箱；部署侧有双 D405 上的异步 VLA（CauSyncVLA）、用人类玩耍数据训 Diffusion Policy 的 DiWALI、换工具的 A²-VLA，以及形态表征里已经收录 PiPER URDF 的 RoboMorpher。存储硬件、水下导航、理发遥操作、对抗补丁、多智能体世界模型、纯四足步态等已排除。",
+  "items": [
+    {
+      "title": "MIR-Depth: Multi-Range Refinement for Single-View RGB-D Depth Completion of Transparent Objects",
+      "authors": [
+        "Xinzhe Fu",
+        "Qi Shao",
+        "Yuanfei Xie",
+        "Taoyu Wu",
+        "Zhihao Cao",
+        "Long Hu",
+        "Hong Liang",
+        "Xianzhi Li",
+        "Anh Nguyen",
+        "Baoru Huang",
+        "Rongsheng Li"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.25417",
+      "categories": [
+        "cs.CV",
+        "cs.RO"
+      ],
+      "summary_zh": "问题：透明物体的 RGB-D 深度会因反光出现空洞，折射又会把背景深度当成物体表面，不能直接当抓取锚点；在固定采样预算下，只在一个搜索区间里 refinement，要么盖不住大折射偏差，要么损失局部分辨率。做法：MIR-Depth 用 Coordinate-Aware Multi-Range Hypotheses，把全局逆深度体和沿深度轴过滤的像素级局部体配在一起；Selective Recurrent Refinement 用带有效性掩膜的 ConvGRU 迭代更新；Spatially Gated Correction 再用逐像素门控修正，不把原始深度当硬约束。在 TransCG 上训练，并零样本转到 TODD、TRansPose、ClearPose、HouseCat6D；真机是腕部相机加 6-DoF 抓取。",
+      "analysis_zh": "结果：TransCG 23,524 张测试图（11,766 张 D435、11,758 张 L515）上，MIR-Depth 的 MAE/RMSE/REL 为 6.833 mm / 10.504 mm / 0.01397，δ1.05=94.41%，优于 ReMake 的 8.040 / 11.363 / 0.01660 和 93.63%。零样本上 TODD、TRansPose、ClearPose、HouseCat6D 的 MAE/RMSE 分别为 32.915/49.797、72.591/95.128、122.294/238.050、36.429/48.035 mm，均低于对比方法。真机用同一套 GraspNet 检测器看 6-DoF 抓取位姿：文中是定性对比，DFNet/BP-Net/PSD 容易撞桌面或错过空腔，MIR-Depth 能保住瓶壁和薄沿。新意是单视图下用多量程假设同时覆盖大偏移和细结构，并且不把不可靠的原始深度钉死。局限：看不到未被观测到的几何，均匀背景下全透明物体几乎没有轮廓；消融里去掉门控在 TransCG 数字略更好，但真机 SAM 掩膜场景下门控更能减小边界跳变。代码和预训练模型写的是即将公开，页面上还没有仓库链接。",
+      "relevance_zh": "真机就是松灵 AgileX PIPER 六轴加腕部 Intel RealSense D435i，和 han 的手臂、相机几乎同一套，透明杯瓶、中空容器和杂乱场景也正是精细抓取会碰到的问题。可以先按「SAM 出掩膜 + Depth Anything V2 先验 + 补全深度再跑 GraspNet」这条链路在自己桌上复现；不必等他们的权重，TransCG 本身就含 D435 数据，可先做基线。还没有接到 GO2 移动基座上，机体一动视角和距离都会变，单帧方法对远侧面仍束手。代码未放出前，复现成本主要在自己训练和标定腕部相机。",
+      "score": 9.5,
+      "priority": "高",
+      "tags": [
+        "深度补全",
+        "透明物体",
+        "抓取检测",
+        "RGB-D",
+        "AgileX PiPER",
+        "RealSense D435i",
+        "GraspNet",
+        "真机"
+      ]
+    },
+    {
+      "title": "WEVO: World Model-Enabled VLA Optimization for Whole-Body Loco-Manipulation",
+      "authors": [
+        "Qianzhong Chen",
+        "Muyuan Lin",
+        "Yuyin Sun",
+        "Mac Schwager",
+        "Cheng-Hao Kuo",
+        "Roberto Martín-Martín"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.25251",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：用强化学习把模仿来的全身 VLA 再推进一步时，人形真机探索不安全，仿真 RL 又容易钻残余 sim2real 空子。做法：WEVO 做无遥操作后训练。先在 LEGS（3DGS+MuJoCo，对象是 Unitree G1）里用合成示范训初始 VLA，再用仿真玩耍数据加强视频世界模型对接触和视角变化的预测；初始策略在真机上每项任务留下 20 条自主轨迹（10 成 10 败）去对齐世界模型，然后把 VLA、SONIC 全身控制器和视频世界模型组成带稠密进度奖励的闭环 RL 环境。项目页：https://qianzhong-chen.github.io/wevo.github.io/。",
+      "analysis_zh": "结果：三项真机任务各 20 次。Pick-and-Place Bottle、Pick-Turn-Place Bottle、Bimanual Move Basket 上，行为克隆为 40%/20%/10%（均值 23.3%），真机 RL 为 60%/45%/40%（48.3%），仿真 RL 反而掉到 30%/0%/0%；WEVO 的 DICE-RL 到 85%/75%/65%，均值 75.0%。去掉玩耍数据中期训练后均值降到 63.3%。同一批 20 条真机数据，视频世界模型还能再滚 480 条在线策略轨迹而不再占真机。新意是把仿真和视频世界模型分工：仿真负责初始化和覆盖，世界模型负责贴近部署的策略改进。局限：任务要分别适配；接口绑在 Unitree G1 上，不能零样本迁到其他人形，更别说四足加臂。论文未给出开源仓库，只有项目页。",
+      "relevance_zh": "课题正好是全身 loco-manipulation 和少真机数据的后训练，这条「仿真铺底 + 少量自主 rollout 校准世界模型 + 在世界模型里做 RL」很值得借。但本体是 Unitree G1 人形、相机是机载 ZED 2i，不是 GO2 EDU+PiPER+RealSense。不能搬策略或控制器，只能搬流程，还要把玩数据和世界模型改成四足加臂的接触与机身晃动。没有代码的话，复现成本高。",
+      "score": 8.8,
+      "priority": "高",
+      "tags": [
+        "loco-manipulation",
+        "全身控制",
+        "VLA",
+        "世界模型",
+        "强化学习",
+        "sim2real",
+        "Unitree G1",
+        "真机"
+      ]
+    },
+    {
+      "title": "Learning to Move from and for Manipulation Policies: Spatializing Latent Action Representations for Goal-Pose-Free Mobile Manipulation",
+      "authors": [
+        "Siyuan Zheng",
+        "Zhong Cao",
+        "Henry X. Liu"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.25366",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：操作策略成不成功，很大程度上取决于机器人和目标的相对位姿；从远处过来既要导航又要局部操作，联合训练贵，往一个预设目标位姿开过去又不够灵活。做法：M4M 从已经预训练好的操作策略里学「为操作服务的移动」。用动作生成网络的隐表示做稠密监督，再加少量执行成败，学一个空间条件嵌入，估计候选基座位姿上的操作成功率；部署时只靠当前双目和语言指令，不必在每个位置真正跑一遍操作策略。导航策略用这个场来走，交接策略决定何时把控制权交给操作。项目页：https://zsiyuan-eng.github.io/M4M/。",
+      "analysis_zh": "结果：在未见过的 RoboCasa 厨房、8 个铰接物体任务上，闭环宏观成功率为 47.0%，最强基线 N2M 为 26.5%，直接开操作只有 19.2%，单次预测变体是 33.3%。相对 N2M 的绝对提升在 6.7 到 30.5 个百分点之间。关冰箱在两个留出厨房上，相对经验站位再高 30.5 个百分点；这一增益在四个冻结操作策略上都成立，控制器也能不改参数迁到另外 7 个任务。训练用特权几何和渲染出的候选视角，部署用标定双目。新意是不指定目标位姿，而是把冻结策略的动作特征空间化成可导航的成功场。局限：评测全是仿真厨房、起始距离 0.5–2.5 m；预测器按任务训练，跨策略只验证了关冰箱；真机、更远导航和动态障碍都还没做。代码和视频在项目页。",
+      "relevance_zh": "GO2 带着 PiPER 进场时，最常见的失败就是站位不好、手臂够不着或视角很差。M4M 正好是「冻住已有抓取/VLA，另学一层移动和交接」，比重新联合训全身策略更适合现有栈。但部署默认是标定双目，han 这边是 D435i/D405 的 RGB-D，要把深度或伪双目接进去；训练还依赖候选视角或场景重建，真机监督怎么采还没验证。可先在仿真里用自己的 PiPER 策略复现成功场，再决定要不要上真机。",
+      "score": 8.6,
+      "priority": "高",
+      "tags": [
+        "移动操作",
+        "基座位姿",
+        "操作策略",
+        "视觉导航",
+        "RoboCasa",
+        "开源",
+        "仿真"
+      ]
+    },
+    {
+      "title": "Single-Controller Teleoperation and Multimodal Dataset Generation for a Mobile Manipulator",
+      "authors": [
+        "Fardien Azizi",
+        "Sitor Sla",
+        "Christiaan Peppelman",
+        "Dion van Santen",
+        "Andrei-Carlo Papuc",
+        "Khaled Mustafa",
+        "Diego Martinez-Baselga",
+        "Javier Alonso-Mora"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.24499",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：移动操作要采集同步的视觉、本体和动作示范，但基座和手臂常常分两个手柄，后期还要手工对齐。做法：在 Clearpath Dingo-O 全向底盘、Kinova Gen3 Lite 六轴和末端 Intel RealSense D455 上，用一只 DualShock 4 同时管底盘、手臂和开始/停止录制；ROS1 Noetic 流水线自动抓 rosbag、过滤过暗过糊的图、按相机时间对齐，并导出给学习用的 Zarr。验证任务是抓瓶子、转身、开到更低的平面再竖直放下。代码：https://github.com/sjnsla/SCT-MMDC。",
+      "analysis_zh": "结果：单手柄可以在底盘模式和手臂模式之间切换并完成录制，作者说输入没有明显额外延迟；无线 SSH 能在机载电脑上拉起录包。四个没有预先训练的操作者都完成了取放并录到示范，但作者明确说这不是正式可用性实验。短时段实验能稳定出同步 Zarr 和清理后的 rosbag；长录制会卡在处理时间、存储和网络带宽上，建议把流水线放到机载并加固态盘。新意是把「一个手柄 + 自动同步出数」收成可复用的工程框架，而不是新的策略算法。局限：系统跑在 ROS1 Noetic / Ubuntu 20.04，迁 ROS2 只写在未来工作里；同步质量主要靠可视化检查，还没有对外部时钟的定量对时。",
+      "relevance_zh": "han 如果要给 GO2+PiPER 采模仿学习或 ACT/Diffusion Policy 数据，最该看的就是单手柄怎么切底盘和手臂、怎么把 RGB-D 和关节对齐后导出 Zarr。相机也是 RealSense，只是他们用的是末端 D455，不是 D435i/D405。底盘是轮式 Dingo-O，不能直接套四足步态接口，手柄映射和话题名都要改。仓库已开源，适合当数据采集脚手架来改；现成代码是 ROS1，接到常用的 ROS2 驱动上还要做一层迁移。",
+      "score": 8.3,
+      "priority": "高",
+      "tags": [
+        "遥操作",
+        "移动操作",
+        "数据采集",
+        "RealSense",
+        "ROS",
+        "开源",
+        "真机"
+      ]
+    },
+    {
+      "title": "Homeward: No Place Like the Training View",
+      "authors": [
+        "Mingyang Lyu",
+        "Yinqian Sun",
+        "Gongce Cao",
+        "Guobin Shen",
+        "Yuhao Zhang",
+        "Lu Jia",
+        "Chenfei Yan",
+        "Qian Zhang",
+        "Pin Lyu",
+        "Chen Gao",
+        "Bo Wang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.24455",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：VLA 默认第三人称相机还停在采集时的位姿；部署时相机被碰、重装或换掉，任务没变、机器人没变，成功率也会掉得很厉害。做法：Homeward 是免训练、即插即用的观测适配器，把未标定的部署相机观测拉回训练视角，冻住的 VLA 不用改权重。诊断发现：用现成前馈三维模型重渲染，细长机械臂会被撕碎，效果可能还不如不校正——而手臂的三维状态其实已经可由运动学算出来。因此它只从当前 RGB 和一张训练视角参考图估计相机参数和静态场景深度，运动连杆则直接按运动学模型来画。",
+      "analysis_zh": "结果：约 30 万次闭环、4 个冻结 VLA、LIBERO-Plus 全部 1,599 种相机变体上，OpenVLA-OFT、π0.5、π0、OpenVLA 的成功率分别从 62.5%、76.5%、68.0%、3.6% 升到 77.6%、95.1%、91.2%、26.4%。无需场景微调或部署相机标定，也能覆盖 6-DoF 随机摆放、焦距变化，以及逐步位姿估计下的段内连续漂移；在四个策略里的三个上，达到或超过经过标定、按场景训练的视角合成基线。新意是把「未知的相机和场景」和「已知的运动学连杆」分开处理。局限：大轨道基线时单目平移估计会漂，按场景训练的合成方法在这类情况下仍更占优；已经在新视角上微调过的策略不必再做还原。作者把迁到真机列为下一步，要处理 URDF 和实物的外观差、手臂前遮挡，以及接触丰富的夹爪–物体交互。页面未见开源代码。",
+      "relevance_zh": "GO2 一迈步、D435i/D405 一重新安装，第三人称或机身相机很容易偏离采集位姿，这和昨天解读里的外参问题是同一类坑。Homeward 的好处是不改 VLA、也不重新标定部署相机，但要用到手臂 URDF 和关节状态来渲染连杆，PiPER 的模型要准，外观差也要能扛。目前证据全在仿真，真机能不能用还没验证。若已经在采固定视角的 π0.5 或 OpenVLA 数据，可以先在仿真里复现这套「运动学画手臂 + 单目还原场景」；没有代码的话实现成本不低。",
+      "score": 8.2,
+      "priority": "高",
+      "tags": [
+        "VLA",
+        "相机视角",
+        "观测适配",
+        "运动学",
+        "LIBERO",
+        "免训练",
+        "仿真"
+      ]
+    },
+    {
+      "title": "Hierarchical Admittance-Impedance Control for Mobile Manipulator Load Transfer",
+      "authors": [
+        "Minghao Xu",
+        "Thushara Sandakalum",
+        "Christina Dao Wen Lee",
+        "Marcelo H. Ang Jr."
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.24771",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：协助搬运行李这类任务里，机器人要托住载荷，人只用较小的力来引导方向，既要柔顺承重，又要在工作空间不够时把移动基座用上。做法：分层导纳–阻抗控制。内层让力矩控制的 Franka Research 3 在机器人–物体界面表现为笛卡尔阻抗，绕命令平衡位姿柔顺承重；外层 6D 导纳监督器把测到的人力/力矩变成平滑的笛卡尔参考运动；工作空间感知的辅助层在需要更大位移时，把平移在手臂和速度控制基座之间分配，并用前方载荷对准把物体留在机器人正前方。系统在 ROS 上实现，用搬行李箱实验验证。",
+      "analysis_zh": "结果：约 3.3 kg 的行李箱（重力约 32.4 N），第三阶段估计稳定载荷约 35.40 N；人的平均引导力 7.43 N（最小 0、最大 20.22 N），大约是所托载荷的 21.0%，说明重量主要由机器人承担。末端总力平均 29.49 N；手臂伸出平均 0.612 m（0.570–0.645 m），没有顶到工作空间边界，也没有缩得太靠近基座；载荷绝对偏角平均 10.31°、最大 19.54°。新意是把「对人导纳、对物体阻抗」和基座辅助、正向对准收成一套搬运流程。局限：实验是单次搬箱验证，基座具体型号文中只写 velocity-controlled mobile base；抓取仍要人把夹爪带到物体上，作者把自主检测、接近和抓取列为后续。未见开源代码。",
+      "relevance_zh": "接触和力控是精细操作、搬运时绕不开的，分层「内阻抗、外导纳、基座帮忙」的思路可以借鉴到 GO2+PiPER 的协同承载。但 FR3 是力矩控制臂，PiPER / PiPER-X 的力控接口和带宽都弱一截，不能直接移植关节力矩阻抗；四足基座也不是论文里的速度控制轮式底盘，还要处理迈步时的姿态扰动。没有代码的话，更适合先在仿真或电流/末端力近似里验证分层逻辑，而不是照搬 FCI 实现。",
+      "score": 8,
+      "priority": "高",
+      "tags": [
+        "移动操作",
+        "阻抗控制",
+        "导纳控制",
+        "力控",
+        "人机协作",
+        "ROS",
+        "Franka",
+        "真机"
+      ]
+    },
+    {
+      "title": "CauSyncVLA: Causal Latent World Modeling for Asynchronous Robot Control",
+      "authors": [
+        "Xu Pan",
+        "Chubin Zhang",
+        "Xingrui Yu",
+        "Runmin Lan",
+        "Zihao Wang",
+        "Wenkai Guo",
+        "Bofang Jia",
+        "Bo An",
+        "Ziwei Wang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.25667",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：VLA 必须在视觉推理还没跑完时就继续动作；计算和执行重叠能减少等待，但感知记忆会过时，前后动作块也对不齐。做法：CauSyncVLA 是异步双系统控制器。Causal Latent World Model 不预测像素或物理状态，而是用延迟的视觉锚点和已执行的状态–动作历史，预测当前感知记忆，并通过对动作敏感的蒸馏保住冻结专家的控制响应；再在更新后的记忆上用 Predictive Flow Warm-Starting，把尚未执行的动作地平线对齐，一步 flow 修正且不必额外训练。项目页：https://xupan.top/projects/causyncvla。",
+      "analysis_zh": "结果：LIBERO-10 上成功率为 93.8%，推理吞吐是 5.04 倍。真机是 7-DoF Franka FR3，双 RealSense D405，H/C=10/2、100 Hz 调度上限。同步 π0.5 的响应从 176.73 ms 降到 83.04 ms，限时完成率到 91.00%；文中汇总的真机成功从 72.5% 升到 87.0%，并改善运动平滑。320 个留出窗口上，用完整因果历史更新记忆，动作 MSE 从过时锚点的 0.10355 降到 0.00983。新意是在冻结 VLA 外围做「执行历史驱动的记忆预测 + 免训练的 flow 热启动」，不用重训原策略。局限：作者把多骨干真机验证、事件触发的视觉刷新和外部扰动重置写成后续；设计主要面向单系统 flow VLA。未见开源仓库。",
+      "relevance_zh": "真机相机就是两台 D405，和 han 的手眼/腕部配置非常近；GO2 一动、机载推理一慢，异步执行几乎是刚需。如果已经在跑 π0.5 或同类 flow VLA，可以优先看它怎么用执行历史把过时 KV 推到当前，以及 PFWS 怎么把动作块接顺。本体仍是固定基座 FR3，迁到四足加臂还要处理基座速度进入状态历史。没有代码，复现要自己接缓存和调度。",
+      "score": 7.8,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "异步控制",
+        "世界模型",
+        "Flow Matching",
+        "RealSense D405",
+        "Franka",
+        "π0.5",
+        "真机"
+      ]
+    },
+    {
+      "title": "DiWALI: Diffusion Policy Learning in World Models via Latent Action Inference from Human and Robot Play",
+      "authors": [
+        "Akshay L Chandra",
+        "Iman Nematollahi",
+        "Lingyue Zhao",
+        "Daria Kulikova",
+        "Angela P. Schoellig",
+        "Fabien Despinoy",
+        "Abhinav Valada"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.24836",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：模仿学习和世界模型都缺带动作标注的机器人数据；人能很快演示，但没有机器人动作。做法：DiWALI 用逆动力学从相邻帧推断隐动作，从而在没有动作标签时也能训世界模型；再用只在机器人玩耍数据上训练的解码器，把隐动作落到机器人指令。技能策略在隐动作空间里用人的无动作示范训练，并在想象中用强化学习改进。代码、数据和视频：https://diwali.cs.uni-freiburg.de。",
+      "analysis_zh": "结果：CALVIN 环境 D、11 个任务上，只用 50 条人类示范、0 条机器人示范的 DiWALI 平均成功率为 59.6%±10.1，高于给 5 条机器人示范的 Diffusion Policy（35.2%±11.5）。加上想象中 PPO 后，5 条机器人示范 + 50 条人类示范从 61.6% 到 75.8%。真机是 Franka Emika Panda，场景相机为 Azure Kinect，腕部为 RealSense D415；机器人玩耍和人类玩耍各两小时。开抽屉、滑块左移、开 LED 三项，主要以人类示范学到的策略，微调前 20 次×3 个种子平均 53%，想象中微调后到 70%，且不必再在真机上交互。新意是人机玩耍共享隐动作世界模型，策略也在隐动作里改进。局限：人类玩耍仍要在机器人工作空间里采集，还不是野外视频；隐动作仍要靠机器人玩耍来落地；改进阶段世界模型是冻住的。",
+      "relevance_zh": "如果 han 觉得给 GO2+PiPER 标动作太贵，这套「人在同一桌面上玩 + 少量机器人玩耍落地 + 世界模型里把 Diffusion Policy 再推一把」很实用，而且代码已经公开。相机是 D415 不是 D435i/D405，臂是 Panda 不是 PiPER，工作空间还得是机器人那张桌子。四足移动会让「同一工作空间的人类视频」更难对齐，不能指望直接吃野外视频。适合先在固定桌面、PiPER 腕部相机上做小规模复现。",
+      "score": 7.6,
+      "priority": "中",
+      "tags": [
+        "Diffusion Policy",
+        "世界模型",
+        "模仿学习",
+        "人类示范",
+        "开源",
+        "Franka",
+        "真机"
+      ]
+    },
+    {
+      "title": "A²-VLA: Adapting Vision-Language-Action Policies to New Tools through Agentic Affordance Discovery",
+      "authors": [
+        "Chenyuan Zhou",
+        "Chaoyi Huang",
+        "Zibo Wang",
+        "Zhiyuan Li",
+        "Yong-Lu Li"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.25656",
+      "categories": [
+        "cs.RO",
+        "cs.AI"
+      ],
+      "summary_zh": "问题：形状不同的工具可能功能相近，但要把操作技能迁过去，需要找到跨工具的功能区域（affordance）并验证新工具是否真能做同样的事。做法：A²-VLA 让具身智能体把工具 affordance 当成可以构造、试验和修正的假设。先用少量源工具的遥操作示范在仿真里重建场景，自动确定任务相关的功能区域和几何属性，再通过自主实验 refinement，把通过验证的抽取技能放进可复用库。最后把编码后的功能区域特征作为条件，送给 π0.5 骨干。",
+      "analysis_zh": "结果：仿真跨工具轨迹重定向成功率为 86.1%，高于无智能体套件、直接用 GPT-6 Astra 预测的 37.8%。真机是 Dobot Nova 2 双臂加三台 RealSense D405。源工具上 Full A²-VLA 三项（Pnp Ring / Cut Sand / Reset Plate，各 50 次）均值为 46.0%，π0.5 为 22.0%；未见过的工具上为 35.3%，对 π0.5 的 4.7% 提升约 30.7 个百分点，但仍低于人类提供 affordance 的 47.3%。新意是用仿真试验把 affordance 抽取做成可积累的技能，再条件化现成 VLA。局限：只适用于能靠重定向解决的工具迁移；VLA 也可能不听正确的 affordance 指导。未见开源代码。",
+      "relevance_zh": "三台 D405 和 π0.5 都和 han 可能采用的相机、模型对得上。如果以后要换平行夹爪、吸盘或不同形状的末端工具，可以借鉴「先在重建场景里试功能区域，再当条件送给 VLA」，而不必为每个工具重新采集大量示范。平台是桌面双臂 Nova 2，不是 GO2+PiPER；还依赖场景重建和智能体试验，工程量不小。没有仓库，短期更适合读流程，而不是直接部署。",
+      "score": 7.5,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "工具适应",
+        "Affordance",
+        "π0.5",
+        "RealSense D405",
+        "真机"
+      ]
+    },
+    {
+      "title": "RoboMorpher: Scaling Robot Morphology Representations for Cross-Embodiment Action Prediction",
+      "authors": [
+        "Wenwei Lin",
+        "Yan Qin",
+        "Weiliang Deng",
+        "Zixuan Li",
+        "Kaixuan Wang",
+        "Zanxin Chen",
+        "Yue Chen",
+        "Tianshuo Yang",
+        "Junting Chen",
+        "Zhixuan Liang",
+        "Yao Mu",
+        "Ximin Lyu",
+        "Renjing Xu",
+        "Ping Luo",
+        "Tianxing Chen"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.24816",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：跨本体操作需要共享的动作表示，但同一组关节值在不同机器人上对应的空间构型不一样，只从关节值学习会不够。做法：RoboMorpher 是形态条件的动作分词器，同时重建关节角和连杆位姿，把控制坐标和运动学效果绑在一起。MorphGen 按调研得到的几何先验大量生成串联臂描述，分词器在 4,000 万对形态–状态上预训练，再冻住后接到 VLA 里做离散预测和连续 refinement。同时发布 EmbodiBench：10 个任务、每个任务 30 个生成 URDF。项目页：https://robomorpher.github.io/。",
+      "analysis_zh": "结果：下游 URDF 不进入分词器预训练。策略在 RoboTwin 2.0 上成功率为 56.40%，EmbodiBench 上为 23.27%，比连续关节空间控制分别高 9.73 和 15.34 个百分点；去掉连杆位姿监督后，EmbodiBench 再掉 17.94 个百分点。RoboTwin 的 15 个任务里有 12 个是提升，碗堆叠、话筒交接、锤击增益最大，按铃、双瓶抓取、扔瓶则略降 3–4 个百分点。末端位姿接口的均值仍更高（RoboTwin 上 69.93%）。EmbodiBench 的堆叠任务接近 0%。形态调研的 33 份串联臂描述里包含 PiPER 的 6 自由度 URDF。新意是大规模运动学监督让关节动作表示带上几何。局限：评测在仿真，未见真机；对末端位姿控制仍没有反超；堆叠等精细对齐任务仍然很难。",
+      "relevance_zh": "要把在别的手臂上训好的策略迁到 AgileX PiPER，这篇的价值在于：分词器预训练已经见过 PiPER 这类 6 轴和夹爪几何，比纯关节值共享更贴近「换本体还要对上空间效果」。但证据全是仿真，且末端位姿控制仍然更强，若 PiPER 侧已经能稳定跟笛卡尔指令，不一定非走关节分词。没有看到正式开源仓库，只有项目页；复现前先确认页面是否放出分词器和 EmbodiBench。也还没有腿式基座，迁到 GO2+PiPER 时形态表示要再加四足。",
+      "score": 7.4,
+      "priority": "中",
+      "tags": [
+        "跨本体",
+        "VLA",
+        "运动学",
+        "动作分词",
+        "PiPER",
+        "仿真"
+      ]
+    }
+  ]
+}

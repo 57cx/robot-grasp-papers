@@ -1,0 +1,263 @@
+{
+  "date": "2026-11-21",
+  "source_query": "基于 data/arxiv_raw/2026-11-21.json（arXiv API 自动抓取，回溯 7 天，窗口 2026-11-14 11:44 至 2026-11-21 11:44 北京时间）。该文件共 13 篇未解读候选；从中选出与腿臂操作、精细抓取、移动操作、VLA 部署及 GO2+PiPER 最相关的 9 篇，每篇标题、作者已对照 arxiv.org/abs 摘要页核对一致。解读当日（2026-11-22，周日）的 raw 文件在 main 上尚未出现，周末 arXiv 通常不发新稿。",
+  "overview_zh": "这批 13 篇候选几乎全是 VLA 和全身控制方向，和硬件贴得最近的是 LocoMuJoCo：TU Darmstadt 等把模仿学习与强化学习的全身控制基准升级到当前版本，同一套 API 覆盖 MuJoCo CPU 与 MJX/MjWarp GPU，收进 9 个人形、3 个骨骼模型和 4 个四足（Unitree A1/Go2、Boston Dynamics Spot、ANYmal C），MIT 协议开源，配套 loco-mujoco-real 做 sim2real。不过真机流水线目前只写了 Unitree G1 和 AgiBot X2 Ultra，Go2 还停在仿真侧。方法线上，PGX 把长程腿臂任务的时序和精度卸给谓词状态机和世界坐标系锁定，VLA 只跑操作阶段：Isaac Lab Arena 里三个任务上，两个骨架的平均阶段进展与成功率从约 26% 拉到 80%；真机是 Unitree G1 取咖啡。OVOA-VLA 则把同一段运动同时在各相机系和基座系里监督，LIBERO / LIBERO-Plus 全推理到 98.7% / 88.1%，Franka FR3 加 RealSense D415 在空间分布偏移下把 π0.5 的 28.3% 拉到 58.3%。规模上，EngineAI 的 Awaken-HI 用约 5 万小时第一人称立体视频加全身动作预训练，T800 上八个单项任务平均 93.75%。接触侧有 TacInno 把视觉和动作解释不了的触觉残差当训练目标；部署侧有带风险控制的检索增强 R2-VLA，以及教 VLA 中途安全停住的 SAFI。工程上，PUPPET 给 TIAGo 移动臂做了同步 VR 遥操作和出数校验。PhyDEX 用投掷考 VLA 的物理推理，全多样性仿真上三个模型总体成功率分别只有 0.9%、0.2% 和 2.4%，真机腕部相机是 RealSense D405。手术 da Vinci 遥操作和越野驾驶 VLA 已排除。",
+  "items": [
+    {
+      "title": "LocoMuJoCo: A Comprehensive Imitation Learning Benchmark for Whole-Body Control",
+      "authors": [
+        "Firas Al-Hafez",
+        "Davide Tateo",
+        "Oleg Kaidanov",
+        "Aditya Bhatt",
+        "Artur Zelik",
+        "Zhengyi Luo",
+        "Jan Peters"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.26293",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：全身控制的模仿学习和强化学习基准仍然散落在单一机器人代码、只做操作的套件和玩具级行走任务里，换一个本体就要重写数据、重定向、仿真和评测。做法：当前版本的 LocoMuJoCo 用同一套 API 把 MuJoCo（CPU）和 MJX、MjWarp（GPU）接起来；插件化观察、奖励、控制模式、地形和域随机化；内置 PPO、GAIL、DeepMimic 风格跟踪、SuperMimic 以及 BPTT-PPO、Transformer 历史 PPO、SAC 等 JAX 实现。本体包括 9 个人形（Unitree H1/H1v2/G1、Atlas、Talos、Apollo、Booster T1、ToddlerBot、Fourier GR1T2）、3 个骨骼模型和 4 个四足（Unitree A1/Go2、BD Spot、ANYmal C）；人形带原生动作捕捉，也可重定向 AMASS 和 LAFAN1。配套 loco-mujoco-real 提供仿真到真机的导出与部署。",
+      "analysis_zh": "结果：这是一篇基准与工程库论文，重点在接口统一和可复现训练，而不是报一条新的 SOTA 成功率。文中给出 SMPL 到机器人和机器人到机器人的重定向流程，以及 CPU / MJX 的完整训练循环示例；真机演示是在 AgiBot X2 Ultra 上跑一条在 LocoMuJoCo 里训好的动作跟踪策略，时长 43 秒。新意是把双后端、自动重定向、生物力学模型、轨迹相似度指标和 sim2real 工具放进同一个 MIT 协议仓库。局限：原生动作捕捉数据集是给人形准备的；四足（含 Go2）作为仿真本体提供，但 loco-mujoco-real 目前只覆盖 Unitree G1 和 AgiBot X2 Ultra，没有写 Go2 真机部署。库本身也不包含机械臂或抓取任务。代码、模型、文档和数据集分别在 GitHub 与 HuggingFace 发布：https://github.com/robfiras/loco-mujoco 。",
+      "relevance_zh": "四足列表里直接有 Unitree Go2，和 han 的 GO2 EDU 是同一系列本体，最适合先拿来做步态、全身跟踪和域随机化的仿真基线，再考虑往真机迁。sim2real 仓库目前不对 Go2，把策略搬到 EDU 上仍要自己对接 SDK 和观测接口。库里没有 PiPER 或 RealSense 的操作任务，腿臂协同抓取需要另外加臂的 URDF 和相机观察。开源程度高，复现门槛主要在 JAX/MJX 环境和重定向数据，值得作为全身控制的起点，而不是直接当抓取方案。",
+      "score": 9,
+      "priority": "高",
+      "tags": [
+        "全身控制",
+        "模仿学习",
+        "强化学习",
+        "四足",
+        "Unitree Go2",
+        "sim2real",
+        "MuJoCo",
+        "开源基准"
+      ]
+    },
+    {
+      "title": "PGX: Physically Grounded Execution for Long-Horizon Humanoid Loco-Manipulation",
+      "authors": [
+        "Kai Lu",
+        "Chenyang Ma",
+        "Ioannis Havoutis"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.26596",
+      "categories": [
+        "cs.RO",
+        "cs.AI"
+      ],
+      "summary_zh": "问题：单体 VLA 做长程腿臂任务时，时序、技能和精度缠在一起，阶段容易跳错，基座一动操作精度就掉。做法：PGX 是训练无关的执行框架，把「何时、在哪做」从网络里拿出来。谓词状态机用 grasped、placed、triggered、at-stance、dropped 等物理谓词门控阶段、触发重试和回退，并协调行走与等待；VLA 只在操作阶段工作；世界坐标系锁定（WCL）负责站位保持、相对物体站位和世界系接触目标。仿真在 Isaac Lab Arena 的 Unitree G1（Dex-3 手）上做搬箱、放杯和取咖啡；真机 G1 用 44 条 Quest 示教做取咖啡，谓词读 Vicon 和关节，头、腕相机给策略观察。",
+      "analysis_zh": "结果：取咖啡任务上，PGX 把 π0.5 的成功率从名义/随机初始化的 0%/0% 提到 60%/55%，把 GR00T N1.6 从 35%/20% 提到 80%/80%，且 GR00T 这条增益不改网络权重。三个仿真任务、两种初始化共六组设定上，两个骨架的平均阶段进展与成功率从约 26% 升到 80%。关掉空间稳定后，π0.5 在取咖啡上掉到 32%/50%，GR00T 掉到 65%/75%。世界系按键原语在 14 次评估里，245 次进入按键阶段中完成 243 次（99%）。真机把仿真阶段图迁到 G1，抓取迁移最好，差距集中在放置和再抓这两个接触阶段；文中未给出真机总体成功率的数字，只在图中对比各阶段。新意是不改 VLA，用物理谓词和世界系锁定把长程结构托住。局限：阶段切换会拉长执行时间；真机谓词依赖动作捕捉，按钮等高精度步骤仍常要世界系原语。项目页：https://kl-research.github.io/pgx 。",
+      "relevance_zh": "真机是 Unitree G1 而不是 GO2，接口和全身控制器不能零样本搬到四足加臂。但「状态机管阶段、导航先把基座放到标准站位、操作阶段再交给 VLA」这条拆法，正好对应 GO2 走位加 PiPER 抓取的长程任务。可以先在自己系统里用物体位姿和夹爪状态做 grasped/at-stance 这类门控，不必等人形权重。WCL 的站位保持对四足更关键，因为机体晃动会直接打乱手眼关系。项目页有材料，文中没有单独给出代码仓库；复现成本主要在自己写执行层和标定相机、物体跟踪，不必先上 Vicon。",
+      "score": 8.5,
+      "priority": "高",
+      "tags": [
+        "腿臂操作",
+        "VLA",
+        "状态机",
+        "全身控制",
+        "Unitree G1",
+        "长程任务",
+        "真机"
+      ]
+    },
+    {
+      "title": "One View, One Action: Spatially Generalizable VLAs through Observation-Aligned Experts and Cross Graph Consistency",
+      "authors": [
+        "Jinxi Liu",
+        "Ruifeng Zhai",
+        "Hao Liu",
+        "Guangrun Wang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.26161",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：多视 VLA 通常只在机器人基座系里监督动作，模型和各相机观察之间的空间对应是隐式学的，换相机视角或初始位姿就容易垮。做法：OVOA-VLA 用已知外参加把同一段示教变到各相机系，同时保留基座系监督；用 Mixture of Transformers 训练一个基座专家和若干视角专家，两个互补的有向注意力图分别建模基座与视角之间的双向交互，再用 Cross Graph Consistency 约束两张图的基座系预测一致。推理支持全专家模式，也支持只用基座专家（视角专家可去掉）。",
+      "analysis_zh": "结果：LIBERO 全推理平均成功率 98.7%，高于最强基线 1.5 个百分点；LIBERO-Plus 全推理 / 仅基座分别为 88.1% / 85.7%。相对 π0.5，相机视角扰动从 66.2% 提到 75.4%，机器人初始化扰动从 67.2% 提到 88.4%。VLABench Track-1 上全推理平均成功率 60.6%，对照复现的 π0.5 为 42.2%；MimicGen Panda D0 上 75.3%，对照 64.4%。真机是 7 自由度 Franka FR3，固定第三人称相机加腕部相机，用的是 RealSense D415（640×480，30 FPS）。六个任务分布内平均 77.5%，π0.5 为 72.5%；在三个任务的空间分布偏移下，仅基座推理把 π0.5 的 28.3% 提到 58.3%。新意是观察对齐的多参考系监督，而不是只靠视角增强。局限：依赖准确的手眼和外参；文中未见公开代码仓库；真机增益在分布内只有 5 个百分点，主要优势在视角和初始位姿偏移。",
+      "relevance_zh": "GO2 一走动，PiPER 腕部或机身 RealSense 的外参和视野都会变，这正是这篇要解决的空间泛化问题。D415 和 han 的 D435i/D405 同属 RealSense，标定和相机系动作表示可以直接借鉴：先把示教变到相机系再训，推理时仍出基座系或末端增量。PiPER 是六轴不是 FR3，要重做运动学和标定，不能直接加载他们的权重。没有开源仓库之前，复现成本在多相机标定和改 π0.5 这类流程匹配训练。对移动操作比桌面固定臂更有用。",
+      "score": 8.5,
+      "priority": "高",
+      "tags": [
+        "VLA",
+        "空间泛化",
+        "多相机",
+        "手眼标定",
+        "RealSense D415",
+        "Franka FR3",
+        "真机"
+      ]
+    },
+    {
+      "title": "Awaken-HI: Scaling Humanoid Intelligence with Whole-Body Human Experience",
+      "authors": [
+        "EngineAI"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.26420",
+      "categories": [
+        "cs.RO",
+        "cs.AI",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：现有第一人称视频数据覆盖了很多日常活动，但缺少与之同步的全身动作，很难规模化地学腿臂协同。做法：Awaken-Human 把约 5 万小时第一人称立体视频与同步全身人体动作配对，覆盖 100 多种技能；Awaken-HI 是一个人形腿臂 VLA，通过共享的 action expert 同时预测原始人体动作和重定向后的机器人动作，再用约 150 小时 T800 遥操作数据做后训练。作者来自 EngineAI，arXiv 作者栏署名为 EngineAI。",
+      "analysis_zh": "结果：增加人体预训练数据会按经验缩放律降低留出集上的机器人动作预测误差，并提高下游真机成功率。全语料预训练并在 EngineAI T800 上适应后，八个单项任务平均成功率 93.75%（每任务 10 次），高于 π0.5 的 57.5% 和 GR00T N1.7 的 58.75%；长程工业上架和家务整理分别为 90% 和 80%，两个基线是 10%/20% 与 30%/10%。对新的物体–目标组合，工业两项 100%、家务两项 80%；对后训练未见过的纸巾和药瓶，物体级完成率为 50% 和 30%，两个基线均为 0%。消融表明同时监督人体动作比只监督重定向动作更有用。局限：数据和模型绑定在 T800 人形上；未见过物体的完成率仍不高；摘要页上的项目主页字段未解析出可用 URL，文中也未给出公开代码或数据集地址。",
+      "relevance_zh": "思路是「大规模人体全身数据 + 重定向到机器人动作」再加真机后训练，对腿臂协同有参考，但不能接到 GO2+PiPER 上直接跑。四足加臂和人形的运动学差得太远，他们的权重和 5 万小时数据若未公开，han 也用不了这个规模。更可执行的是小规模采集 GO2 走位与 PiPER 操作同步的示教，试验「同时预测人/遥操作轨迹和机器人动作」这一辅助目标，而不是复制 T800 的数字。在代码和数据公开前，这篇更适合当背景，不适合当本周复现对象。",
+      "score": 7.5,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "腿臂操作",
+        "人形",
+        "大规模数据",
+        "模仿学习",
+        "EngineAI T800",
+        "真机"
+      ]
+    },
+    {
+      "title": "TacInno: Teaching Vision-Language-Action Models the Contact Dynamics Beyond Vision and Action",
+      "authors": [
+        "Weile Li",
+        "Yunfan Lou",
+        "Muqing Shi",
+        "Zihao Zhang",
+        "Zhenbiao Huang",
+        "Boxian Yao",
+        "Xiyu Zhu",
+        "Zhibo Pang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.26405",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：给 VLA 加触觉后收益不稳定，有的视觉–触觉模型几乎不靠触觉，因为凝胶在夹爪闭合时的变形等变化，本来就能从视觉和已执行动作里预测出来。做法：TacInno 只把视觉和动作解释不了的接触动态（tactile innovation）当作训练目标。分词器在视觉观察和已执行动作条件下，把未来触觉变化压成离散码；策略 TacInno-VLA 学习预测这个码，部署时不加码的模块。仿真用 UniVTAC 六个接触任务（Isaac Sim，Taxim 渲染的视觉触觉）；真机是 Franka FR3 加视觉触觉传感器，任务为擦板、插插头、提起罐、旋开盖。",
+      "analysis_zh": "结果：仿真六项平均成功率 87.5%，比最强基线 SimpleTouch 和 N0-VTLA 分别高 10.7 和 12.2 个百分点，且是唯一在每项都达到至少 75% 的方法。真机四项平均 70.5%，高于 SimpleTouch 的 61.5% 和 FTP-1 的 58.5%；关掉触觉输入或做 tactile-off 测试会明显下降。消融里去掉视觉与动作条件掉 21 个百分点，去掉注意力掩膜（让动作 token 看见码）掉 15 个百分点，去掉码预测损失掉 7 个百分点。新意是把可预测的触觉变化从训练目标里剥掉，而不是再加一路触觉输入。局限：依赖夹爪上的视觉触觉传感器；部署虽不再需要码模块，策略在测试时仍要用触觉输入才能保持性能。项目页：https://tacinno.github.io 。",
+      "relevance_zh": "精细抓取里「接触发生了但看起来不明显」确实是痛点，把不可预测的接触残差当辅助损失，这个想法可以记下来。但 han 当前的 PiPER 加 D435i/D405 没有凝胶触觉，缺了这篇的关键模态，不能按原文数字复现。若暂时不加触觉，对精细操作更现实的是力/电流或深度接触检测，而不是先上 GelSight。项目页可跟，若以后在夹爪上加视觉触觉，再回来对 UniVTAC 和他们的分词器。",
+      "score": 7.5,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "触觉",
+        "接触操作",
+        "精细抓取",
+        "Franka FR3",
+        "真机"
+      ]
+    },
+    {
+      "title": "Risk-Controlled Test-Time Adaptation for Vision-Language-Action Models",
+      "authors": [
+        "Zixuan Liu",
+        "Hashem Haghbayan",
+        "Zizhan Zheng",
+        "Siavash Khajavi"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.26438",
+      "categories": [
+        "cs.CV"
+      ],
+      "summary_zh": "问题：检索增强的 VLA 可以在测试时用专家演示当上下文、不更新参数，但检索到相关演示后，模型仍可能用不好这些信息，最终任务失败。做法：R2-VLA 学一个不确定性预测器，估计「在当前检索上下文下 VLA 动作可不可靠」，据此决定自主执行还是请求专家介入；再用任务级风险控制校准阈值，使失败风险满足用户指定要求；专家修正会写回检索记忆，同时尽量保持该风险保证。实验在 MiniVLA、π0-FAST、OpenVLA 三个骨架和 LIBERO 的 Spatial / Object / Goal / Long 四个套件上进行，对照是不做求助的 RICL。",
+      "analysis_zh": "结果：相对 RICL，三个骨架的平均成功率分别从 51.8%、62.8%、57.4% 提到 62.8%、72.0%、68.6%，即提高 11.0、9.2、11.2 个百分点，对应平均求助率（ASK）为 20.8%、49.0%、33.3%。在相同 ASK 预算下，随机求助比 R2-VLA 低 6.5 个百分点，说明增益不只是多问了专家。π0-FAST 在 LIBERO-Object 上到 78.9%，略低于 80% 的目标，作者归因于评估 rollout 有限，风险控制保证是统计意义上的。全程是 LIBERO 仿真（Franka Panda），没有真机。文中未给出独立代码仓库，π0-FAST 实验基于 Physical Intelligence 的 openpi 检查点。局限：需要可调用的专家（人或脚本）和演示记忆，阈值要校准；求助频繁时（如 π0-FAST 近一半动作）部署成本不低。",
+      "relevance_zh": "若以后在 GO2+PiPER 上跑检索增强或π0 这类 VLA，用不确定性门控「不确定就切遥操作/示教」比盲目闭环更安全，和数据采集流水线也合得上。但目前证据全在 LIBERO 里，没有移动基座、也没有 RealSense 真机。可以先在桌面 PiPER 仿真或固定机位抓取里试一个不确定度阈值和求助开关，不要直接把他们的校准数字搬到真机。没有官方仓库，复现要自己接 openpi 或 OpenVLA，并实现不确定性头和校准流程。",
+      "score": 7,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "测试时适应",
+        "风险控制",
+        "检索增强",
+        "LIBERO",
+        "仿真"
+      ]
+    },
+    {
+      "title": "PUPPET: Physical-Unified Platform for Presence, Embodiment, and Teleoperation",
+      "authors": [
+        "Mahika Vats",
+        "Milan Groshev",
+        "Carlos Gomez Cubero",
+        "Eduardo Castelló Ferrer"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.26350",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：能远程接到真机，并不等于能拿到可复用的实验数据——一次遥操作任务做完，记录仍可能残缺或不一致。做法：PUPPET 用持续同步的 VR 副本打开实体实验室，把机器人、场景和任务物体放进同一虚拟空间，并在流程里做试验校验。真机是 TIAGo（差速移动底盘加 7 自由度力控臂，头部 RGB-D、关节编码器和板载 ROS）；操作端是 Meta Quest 3；OptiTrack 以 120 Hz 跟踪底盘和物体；Unity 2022 做虚拟实验室，ROS 与 TCP 同步。用户研究是 30 人组内设计，同一桌到架移物任务分别在现场、2D 遥操作和 PUPPET 下完成。",
+      "analysis_zh": "结果：学习后完成时间上，VR 比 2D 快 27.7%（68.7 秒对 95.0 秒），与现场的 72.1 秒统计上无显著差异。校验可用试验比例为 85.6% 对 2D 的 66.0%，无需干预试验为 89.7% 对 67.2%。系统把关节、指令速度、里程计、夹爪、末端位姿和 OptiTrack 轨迹写入 ROS bag，并用完整性、时间连续、信号合理、执行一致性四条规则做校验。新意不在提出新的操作策略，而在把「远程能否产出可复用记录」当作评价目标。局限：目前只在 TIAGo 和单一移物任务上验证；同步依赖动作捕捉；文中未给出公开代码地址。延迟和标定误差对更精细的接触任务会更敏感。",
+      "relevance_zh": "TIAGo 是移动底盘加臂，和 GO2 驮 PiPER 的形态最接近这批里的遥操作系统，对「怎么采可训练的移动操作数据」有直接参考：同步记录底盘、臂、夹爪和相机，并在写入时做完整性校验。han 不必上 OptiTrack 和整屋 VR，可以用 Quest 或已有手柄，先做到轨迹、相机和时间戳对齐，再用简单规则筛掉断流和碰撞试验。硬件和 ROS 栈不同，不能照搬他们的同步层；没开源仓库的话，更宜借设计而不是借代码。",
+      "score": 6.5,
+      "priority": "中",
+      "tags": [
+        "遥操作",
+        "数据采集",
+        "移动操作",
+        "VR",
+        "TIAGo",
+        "ROS"
+      ]
+    },
+    {
+      "title": "Teaching Vision-Language-Action Models to Stop Safely",
+      "authors": [
+        "Zheyuan Liu",
+        "Chuhan Wang",
+        "Jinduo Guo",
+        "Yue Huang",
+        "Xiangchi Yuan",
+        "Ningshan Ma",
+        "Meng Jiang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.26239",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：已有工作研究 VLA 对禁止任务的抑制和拒识，但执行已经开始后再停下来，并控制停住时的物理反应，仍然很难。评估显示：只在初始状态会拒识的策略，从中途接管后仍可能把任务做完；即使没做完，也可能把已抓住的物体丢掉，所以「任务未完成」并不足以说明安全。做法：State-Aware Fallback Imitation（SAFI）针对「握住是合适替代动作」的任务，先在禁止任务的演示上构造静止臂指令和一致的夹爪目标，再与保留任务的原始动作联合适应，让策略在中间状态学会明确的回退，同时保住其他技能。",
+      "analysis_zh": "结果：在 OpenVLA-OFT 上对 LIBERO 与 BadLIBERO 评估禁止完成率、物理事件和保留任务表现。在所评测的 LIBERO 任务上，SAFI 把接管后的目标成功率降到 1.3%，未记录到掉落等物理事件或动作饱和，并保持较高的保留任务成功率。新意是把「停」做成可模仿的持握回退，而不是只在初始状态拒识。局限：假设持握是合适的安全动作，对必须立即放下或必须撤离的场景不适用；证据目前停在仿真，没有真机。代码写作地址为 franciscoliu/SAFI。",
+      "relevance_zh": "真机用 GO2+PiPER 跑 VLA 时，误触发后继续抓或突然松手都危险，尤其是已经咬住物体的时候。SAFI 的「中途改成保持位姿和夹爪」可以做成安全层或微调目标，不必等他们的仿真数字。但 LIBERO 里没有四足基座，行走过程中急停还要另做。可先在 PiPER 桌面任务里加一个禁止任务接管测试，看会不会掉物；代码可按论文给出的 franciscoliu/SAFI 查找，部署前需自行确认仓库是否已公开。",
+      "score": 6.5,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "安全",
+        "模仿学习",
+        "LIBERO",
+        "OpenVLA",
+        "仿真"
+      ]
+    },
+    {
+      "title": "PhyDEX: A Benchmark for Physical Reasoning in Vision-Language-Action Models via Dynamic Extrinsic Dexterity",
+      "authors": [
+        "Hao Vo",
+        "Taisei Hanyu",
+        "Yuki Ikebe",
+        "Pham Tri Quang",
+        "Sreevenkata Anjani Tishita Godavarthi",
+        "Nghi D. Q. Bui",
+        "Daniel Sonntag",
+        "Chase Rainwater",
+        "Duy Minh Ho Nguyen",
+        "Anh Nguyen",
+        "Ngan Le"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.26565",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：现有 VLA 基准主要看夹爪–物体接触，很少考物体如何通过重力、摩擦、惯量和质心与环境互动，因而分不清模型是真懂物理还是在插值训练数据。做法：PhyDEX 从动态外在灵巧（投掷到工作空间之外）切入，要求模型推断质量、质心和摩擦。数据集含 35,357 条轨迹（143.2 小时，10 Hz），9 类任务、100 个场景，覆盖均匀、不规则和变质量物体，以及静止、多目标和移动目标。数据由抓取生成、运动规划和闭环投掷优化自动产出。评测 GR00T N1.7、DynamicVLA 和 ForceVLA。",
+      "analysis_zh": "结果：全多样性（α=1）下三个模型总体成功率分别为 0.9%、0.2% 和 2.4%，均低于 3%；多数成功发生在均匀物体加静止目标，动态目标上几乎没有完成。约 21.24% 的轨迹能进入投掷阶段，但总体成功率只有约 1.2%，即只有约 5.6% 的投掷成功。提供物体的真值物理属性后，成功率大致翻倍（文中用图展示，并在摘要中如此概括）。在 Unitree 人形的 2,400 条交叉本体数据上，平均成功率为 6%、0.7%、8.7%，失败模式与臂上类似。真机是 UR10e 加 Robotiq 2F-85 和腕部力/力矩，基座相机 RealSense D455、腕部相机 RealSense D405；三个外观相同、物理属性不同的立方体上，ForceVLA 平均 51.3%，GR00T 10.7%，DynamicVLA 为 0%。局限：任务是投掷不是稳定抓取；仿真和真机数字差距大；摘要页提到项目页，但抓取到的页面未给出可点击的代码或数据链接。",
+      "relevance_zh": "真机腕部用了 RealSense D405，和 han 的近距离精细观察相机是同一型号，多相机标定和腕部视角可以参考。但课题重心是稳定精细抓取，不是把物体扔出工作空间，不宜把投掷成功率当作当前指标。ForceVLA 在真机上明显更好，可能和腕部 F/T 有关，若 PiPER 能读电流或外接力传感器，值得留意，却不能直接对标他们的 51.3%。数据生成在 Isaac Sim 上，公开仓库未在摘要页确认前，先把它当「现有 VLA 物理推理仍弱」的背景，不必为本周实验优先复现。",
+      "score": 6.5,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "物理推理",
+        "基准",
+        "RealSense D405",
+        "UR10e",
+        "真机"
+      ]
+    }
+  ]
+}

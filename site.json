@@ -6,7 +6,7 @@
   "language": "zh-CN",
   "url": "https://57cx.github.io/robot-grasp-papers/",
   "base_path": "/robot-grasp-papers/",
-  "updated": "2026-11-22T10:48:36+08:00",
+  "updated": "2026-11-23T11:29:53+08:00",
   "sections": [
     {
       "id": "overview",
@@ -44,7 +44,7 @@
     "papers": 145
   },
   "latest_digest": "2026-11-21",
-  "latest_arxiv_raw": "2026-11-22",
+  "latest_arxiv_raw": "2026-11-23",
   "hardware": [
     "Unitree GO2 EDU",
     "AgileX PiPER",

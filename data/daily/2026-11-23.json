@@ -1,0 +1,327 @@
+{
+  "date": "2026-11-23",
+  "source_query": "基于 data/arxiv_raw/2026-11-23.json（arXiv API 自动抓取，回溯 7 天，窗口 2026-11-16 11:29 至 2026-11-23 11:29 北京时间）。该文件共 14 篇未解读候选；从中选出与腿臂操作、精细抓取、四足扰动鲁棒、VLA 部署及 GO2+PiPER 最相关的 10 篇，每篇标题、作者已对照 export.arxiv.org 的 arXiv API 摘要记录核对一致。解读当日（2026-11-24）的 raw 文件在 main 上尚未出现（抓取 Action 通常在北京时间 10:20 之后落地）。11-22 的 raw 文件条目为空，不另写解读。未收录手术机器人策略预训练，以及多客户端 VLA 推理的系统分析。",
+  "overview_zh": "这批 14 篇候选仍以 VLA 为主，但有几篇直接碰到抓取失败、接触力和四足负重。和硬件最贴的是 FoRe：用接触力把示教拆成接近—抓取和搬运—放置两段策略，再从失败后状态做局部强化学习，训一条专门的重试策略；推理时用力和夹爪指令决定切到哪一段。LIBERO-SUCTION 上 VLA-Adapter / π0.5 平均成功率分别从 69.2%、85.9% 提到 87.6%、92.4%；真机是 DOBOT CR10AF 加 Robotiq EPick 吸盘，第三人称和腕部都是 RealSense D435i，三类任务上两个骨干的平均成功率分别从 26.7%、48.3% 提到 51.7%、70.0%。接触侧还有 FORTH，把触觉编码、零阶微调和滑移门和各自要控的物理量对上：弹性薄壳上 SlipGuard 峰值夹持力 0.77 N，对照反射斜坡 22.43 N，大约低 29 倍，代码已开源。四足这边是 PACE：在深之蓝 Lite3 上把负载、质心偏移、执行器退化和外力收成一个关节空间扰动，用不需要关节加速度的非线性观测器在线估计，同时做力矩前馈和策略观测增广。仿真 11 种工况相对 BASELINE、HIMLOCO 把速度跟踪误差分别降 57.0% 和 18.1%；策略只在平地、最多加 3 kg 训练，真机能驮 11.5 kg（接近自重 11.60 kg），16 cm 台阶五次全过，还能零样本走石板、草地、沙地、碎石路和乱石。人机干扰上，Tripwire 让智能体给底层策略写行程开关，RoboHD 上最强策略相对同一套回合式框架把安全性从 61.3% 提到 81.3%；真机是 xArm 7 加 RealSense D455，挂杯子和挂毛巾在有人挡路或挪走目标时仍有 5–7/10。腿臂协同是 BeyondEgo：给 Unitree G1 加同步外视和训练期双视角预见，HELM 仿真里分布内成功率从 48.0% 提到 92.0%，200 个偏移场景从 23.5% 提到 65.0%，但没有真机，部署还依赖外置相机。方法线上，LS-MBPO 用潜空间世界模型做残差模型强化学习，LIBERO 和 RoboTwin 上全面高于对照，真机在 ALOHA 上高于 π0.5-SFT 和 Dreamer；GenPA 把图像生成骨干直接改成动作回归，LIBERO 99.10%、LIBERO-Plus 83.79%，当前深度监督有效，USB 插拔真机平均 78.0%。SCAP 用随机遮挡做 action expert 预训练，FR3 上头部、侧视、腕部分别是 D435、D435i、D405，三个指令跟随任务平均 76.67%，比完整输入预训练高 25 个百分点。另外还有处理视觉标注缺口的区间运动监督，以及动态场景基准 RoboDyna——所有受测策略成功率都低于 20%。",
+  "items": [
+    {
+      "title": "FoRe: A Force-Guided Framework for Autonomous Grasp Recovery in Vision-Language-Action Models",
+      "authors": [
+        "Shuai Peng",
+        "Yongkai Liao",
+        "Yuxin Cheng",
+        "Haoyuan Wang",
+        "Jian Huang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.27011",
+      "categories": [
+        "cs.RO",
+        "cs.AI"
+      ],
+      "summary_zh": "问题：VLA 做抓取搬运时，局部抓取失败后仍可能继续进入搬运，像是过度依赖本体感觉判断阶段，示教里也缺少重试样本。现有办法多半靠部署时人工引导，或再增强示教。做法：Force-guided Recovery（FoRe）用接触力把示教拆成接近—抓取和搬运—放置两段，分别监督两条策略；再从接近—抓取策略初始化一条重试策略，在失败后的状态上做局部强化学习。推理时由控制器同时看接触力和夹爪指令，检测抓取失败并调用重试，避免不该发生的阶段切换。作者还把 LIBERO 改成带吸盘和力反馈的 LIBERO-SUCTION，共 22 个任务、1100 条完整示教。",
+      "analysis_zh": "结果：LIBERO-SUCTION 上，VLA-Adapter 平均成功率从 69.2% 提到 87.6%（+18.4 个百分点），π0.5 从 85.9% 提到 92.4%（+6.5）。原版 LIBERO 四个套件上，两个骨干分别到 98.6% 和 98.3%，高于 CycleVLA。每个任务只留一条示教时，LIBERO-SUCTION 上两个骨干仍分别有 +22.7 和 +24.1 个百分点。真机是六自由度 DOBOT CR10AF、Robotiq EPick 真空吸盘，以及第三人称和腕部两路 Intel RealSense D435i；任务分简单抓放、有干扰物、以及钢板/亚克力/纸板的长程堆叠。重试策略在真机上继续做强化学习。40 次/任务的评测里，VLA-Adapter 平均成功率从 26.7% 到 51.7%，π0.5 从 48.3% 到 70.0%；长程任务上前者从 20.0% 到 42.5%，后者从 42.5% 到 60%。新意是把力反馈同时用在阶段切分、失败检测和重试学习，而不是只在部署时加一层规则。局限：作为外部恢复框架，它依赖接近—抓取策略先碰到目标；如果一直接触不上，力引导的切换和重试都启动不了。消融显示去掉力切换或去掉重试，收益会明显下降。正文未提供官方代码仓库。",
+      "relevance_zh": "腕部和第三人称都用 D435i，和 han 的相机清单直接对得上。力引导的抓取失败检测和自动重试，正好是 PiPER / PiPER-X 做精细抓取时最容易踩的坑：空抓之后还往下走。吸盘真机和并行夹爪的 LIBERO 都做了，思路可以迁到夹爪，但要自己在 PiPER 上接出力或等效接触信号（关节电流、外部力传感器或视觉接触判据），并准备失败后状态做局部强化学习。和 GO2 的腿臂协同无关，先适合在固定底座或短时站稳的手臂上复现阶段机和重试，再考虑走路时的力噪声。复现门槛主要在力接口和真机 RL，方法本身不绑定 DOBOT。",
+      "score": 9,
+      "priority": "高",
+      "tags": [
+        "VLA",
+        "抓取恢复",
+        "力反馈",
+        "精细抓取",
+        "RealSense D435i",
+        "DOBOT CR10AF",
+        "真机",
+        "LIBERO"
+      ]
+    },
+    {
+      "title": "FORTH: Grounding Tactile VLA Execution via Forward-Only Proxy-Control Pairing",
+      "authors": [
+        "Junde Li",
+        "Wei-Han Yu",
+        "Xiangyi Chu",
+        "Yaoxin Li",
+        "Jiawei Xu",
+        "Ka-Fai Un",
+        "Pui-In Mak"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.26744",
+      "categories": [
+        "cs.RO",
+        "eess.SY"
+      ],
+      "summary_zh": "问题：很多 VLA 被写成“已经会力控”，依据只是代理损失变小，并不等于接触力在物理上被控住。作者指出三处断点：冻结视觉骨干丢掉接触几何，下游损失掩盖 token 级梯度对齐，离散滑移指示会把优化推塌。做法：FORTH 在每一层把优化目标和可测的物理量配对——用只做前向的、层局部触觉编码器保留空间接触几何；用 token 并行的零阶适配器在激活空间更新；再用连续触觉门 SlipGuard 在初始滑移时触发。部署侧要求剪切/法向触觉垫对、一组正常接触标定和策略无法自行抬高的力上限，不额外要求六维力/力矩传感器。",
+      "analysis_zh": "结果：在弹性薄壳上，反射斜坡峰值夹持力 22.43 N、残留变形 10.62 mm，SlipGuard 峰值为 0.77 N、残留 0.01 mm，约低 29 倍，薄壳保持弹性；刚性抓取的稳态力也从对照的 4.412 N 降到 1.518 N。LIBERO 的 Spatial / Object / Long 三个套件（不含 Goal）上，FORTH 平均成功率 97.6%，略高于文中列出的 OpenVLA-OFT 等对照。同一骨干上，零阶适配器把峰值激活内存降到反向传播的 1/7.12。真实传感器记录上，力统计和比值统计的触发前误报率分别是 0.024 和 0.031，阈值随传感器偏差会漂。新意是把表示、更新和闭环门都与可观测的力/滑移对上，而不是只在仿真里报成功率。局限：SlipGuard 的阈值是经验标定而非从物理推导；LIBERO 评测排除了 Goal 套件；部署必须有高频触觉垫，48×64 的触觉帧是额外输入。代码和模型开源：https://github.com/Jordanlllll/FORTH 。",
+      "relevance_zh": "对 PiPER 做易碎、易滑物体的精细抓取很有参考价值：空抓、夹碎、打滑是同一类接触失效。但 GO2+PiPER 默认没有指尖触觉，要复现 SlipGuard 先得加 DIGIT/GelSight 一类视触觉或至少剪切-法向垫，并保证控制环频率够用（文中伺服层用 500 Hz）。没有触觉时，不要指望只靠 RGB 的 D435i/D405 直接套这套门控。开源仓库适合先读接口和门控逻辑，再决定是否在夹爪上加触觉。",
+      "score": 8.5,
+      "priority": "高",
+      "tags": [
+        "VLA",
+        "触觉",
+        "滑移检测",
+        "力控",
+        "精细抓取",
+        "LIBERO",
+        "开源"
+      ]
+    },
+    {
+      "title": "PACE: Policy Augmentation and Compensation With Explicit Disturbance Estimation for Robust Locomotion",
+      "authors": [
+        "Shixuan Han",
+        "Yuyang Wang",
+        "Jingting Jia",
+        "Zeshuai Chen",
+        "Jindou Jia",
+        "Kexin Guo",
+        "Xiang Yu"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.27061",
+      "categories": [
+        "cs.RO",
+        "cs.AI"
+      ],
+      "summary_zh": "问题：四足强化学习常靠域随机化把各种扰动都“赌”进去，跟踪精度和超出采样范围的泛化仍然难两全。做法：PACE 把负载变化、质心偏移、执行器退化和外力收成一个关节空间扰动，用非线性观测器在线估计，且不需要测关节加速度。估计值先做力矩前馈补偿，再作为额外观测送给策略，训练和部署都保持这两条通路。接触力项在仿真里直接取仿真器，真机上用关节和惯性测量解析估计，不要求足底力传感器。策略在 Isaac Gym 里用 PPO 训练，且只在平地上训，附加质量最多 3 kg，不接触高度落差和复杂地形。",
+      "analysis_zh": "结果：仿真 11 种动力学工况下，相对 BASELINE 和 HIMLOCO，速度跟踪误差分别降低 57.0% 和 18.1%，OOD 指令下跟踪也更好。真机是深之蓝 Lite3，自重 11.6025 kg。负重测试中 BASELINE 稳定走到 7.5 kg、8 kg 失败，仅前馈的 PACE0 到 11 kg，完整 PACE 走到 11.5 kg。下台阶从 8 cm 到 16 cm、每档 5 次：BASELINE 仅 8 cm 有 80%，更高全失败；PACE 在 8–16 cm 全部成功，再高所有方法都失败。五种未见地形（石板、草地、沙地、碎石路、乱石）各 5 次，PACE 前四项 100%，乱石 60%（PACE0 在乱石上是 80%，说明观测增广在极不规则接触上不一定更好）。局限：观测器对所有关节和工况用同一个标量增益 L，更快跟踪和抑制噪声之间还不能自适应；直接用重构加速度算扰动在真机上会摔倒。作者把自适应增益，以及扩展到人形和富接触操作，留作未来工作。正文引用了深之蓝实验室的训练框架仓库，但未宣布 PACE 自身的官方代码发布。",
+      "relevance_zh": "Lite3 不是 GO2，但问题几乎就是给 GO2 EDU 加 PiPER 之后会遇到的事：背部负载接近自重、质心前移、室外地面。不依赖足底力传感器，只用关节和 IMU，和 GO2 的传感条件接近。值得作为“显式扰动估计 + 前馈补偿 + 策略观测”的迁移起点，尤其是臂在背上以后的步态保稳。它本身没有机械臂、没有抓取，也不能直接当全身操作方案。仿真在 Isaac Gym，真机接口要自己对到宇树 SDK；训练只在平地，往崎岖地面搬时还要重新验证。复现的关键是观测器和无传感器足力估计，而不是照抄 Lite3 的 URDF。",
+      "score": 8.5,
+      "priority": "高",
+      "tags": [
+        "四足",
+        "扰动估计",
+        "全身控制",
+        "强化学习",
+        "sim2real",
+        "DeepRobotics Lite3",
+        "Isaac Gym",
+        "真机"
+      ]
+    },
+    {
+      "title": "Tripwire: Robot Agents that Program Their Own Interrupts under Human Disturbance",
+      "authors": [
+        "Sunli Chen",
+        "Yun Zong",
+        "Qinhong Zhou",
+        "Xiaowen Qiu",
+        "Jiaben Chen",
+        "Zeyuan Yang",
+        "Chuang Gan"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.27182",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：智能体框架是回合式的：调用一条预训练 VLA 或世界动作模型后，要等这次调用返回才能再思考。这期间人可能走进路线，或把正要抓的物体挪走。把智能体叫得更勤会缩短盲区，但推理模型每次要数秒，大多数控制步并不需要新决策。做法：TRIP 是免训练、事件驱动的框架。智能体每次调用时写一段轻量、有状态的 Python 行程开关，与策略并行运行，可查询小型 VLM（例如定位人并测距离），决定继续执行还是把控制交还智能体。触发后停止策略并返回原因，智能体再评估、改写行程开关后继续。",
+      "analysis_zh": "结果：仿真基准 RoboHD 含 168 个 RoboCasa365 场景，有人接触即失败。相对同一智能体、工具和提示的回合式框架，TRIP 在最强策略（Xiaomi-Robotics-1）上把安全性从 61.3% 提到 81.3%，任务成功率 38.7% 对 31.0%，没有牺牲成功。行程开关需要能被改写：固定开关会把安全性打回 61.3% 或把成功降到 16.1%。真机是 UFACTORY xArm 7 平行夹爪，第三人称和腕部各一台 RealSense D455；两条单任务 π0.5 策略各用 100 条遥操作示教，控制 30 Hz，策略和 Qwen3.5-9B 分跑在两张 RTX 4090 上。挂杯子和挂毛巾各 10 个桌面布置，分无人、挡路、挪走目标三种条件。无人时三种方法都在 5–7/10；有人干扰时策略单独和回合式框架最多 3/10，TRIP 仍是 5–7/10。行程检查平均 0.24 秒，智能体一轮平均 4.3 秒，期间手臂保持静止。局限：大规模仿真里的人是脚本驱动、无碰撞体的动作捕捉化身；仿真会在智能体和 VLM 计算时暂停物理；真机大规模有人实验因安全风险不可行。正文未提供官方代码仓库。",
+      "relevance_zh": "相机方案（第三人称 + 腕部深度相机）和 D435i/D405 的用法很接近，只是文中用的是 D455。对实验室里“旁边有人走过、目标被挪走”的抓取演示很实用，而且不改底层策略、不用再采集干扰数据。可以先在 PiPER 上包一层行程开关，用轻量 VLM 看人和物体是否还在预期位置。GO2 移动时还要处理机身晃动和更大的视野盲区，文中的后置广角只出现在仿真。代价是多一张跑 VLM 的 GPU，以及智能体思考时手臂会停住。复现关键是事件驱动框架，不是 xArm 本身。",
+      "score": 8,
+      "priority": "高",
+      "tags": [
+        "VLA",
+        "人机共处",
+        "抓取",
+        "智能体",
+        "RealSense D455",
+        "xArm 7",
+        "真机",
+        "遥操作"
+      ]
+    },
+    {
+      "title": "SCAP: Stochastic Context for Action Expert Pretraining",
+      "authors": [
+        "Xiao Lin",
+        "Yaoxu Lyu",
+        "Ronghao Dang",
+        "Zhili Liu",
+        "Kaijing Ma",
+        "Yang Zhou",
+        "Dingning Liu",
+        "Runzhe Teng",
+        "Jun Cen",
+        "Shanghang Zhang",
+        "Chengju Liu",
+        "Qijun Chen"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.27187",
+      "categories": [
+        "cs.CV",
+        "cs.RO"
+      ],
+      "summary_zh": "问题：先做单模态的 action expert 预训练，可以压住视觉捷径，但也可能把后续视觉—语言联合建模的通路关掉；诊断模型里，即使后面用完整视觉和语言输入再训，这条通路也恢复不了。做法：Stochastic Context for Action Expert Pretraining（SCAP）插在完整输入训练之前，预训练阶段把进入 VLM 的视觉和文本 token 随机遮挡，再进入全输入训练。作者在统一诊断模型里显示，这样能保住联合建模通路，并相对直接全输入训练减少视觉捷径、提高对语言指令的依赖。",
+      "analysis_zh": "结果：SCAP 在四种不同 VLA 架构上均有提升。真机是 Franka Research 3 加两指平行夹爪，三个 RGB 视角分别是头部 Intel RealSense D435、侧视 D435i、腕部 D405，图像 640×480，控制记录 30 Hz。三个木块装配任务都是同一初始场景对应两条语言指令（底座颜色、屋顶形状、同色/交叉配色），每条指令 50 条示教、10 次测试。SCAP→Full 平均成功率 76.67%，完整输入预训练 51.67%，语言-only 再全输入 45.00%，视觉-only 再全输入 63.33%，相对完整输入预训练高 25 个百分点；交叉配色上优势最大（70% 对 VA 路线的 40% 和 LA 路线的 30%）。新意是把遮挡分布写成统一的预训练框架，视觉-only、语言-only 和全输入都是特例。局限：真机只覆盖一台 FR3 和三个桌面装配任务；预训练数据规模到约 120 万条轨迹，复现成本不低。正文未提供独立的官方代码仓库。",
+      "relevance_zh": "三路相机正好是 D435、D435i 和 D405，和 han 的 RealSense 清单一致，腕部用 D405 做近景也和精细抓取的常用接法相同。如果后续在 PiPER 上做指令跟随的 VLA，SCAP 的随机遮挡预训练值得作为数据配方，尤其是防止模型不听语言、只看桌面布局。它不涉及四足或移动操作，迁移时要把 FR3 的关节和夹爪接口换成 PiPER。大规模预训练数据（含 AgiBot World 等）和算力是主要门槛，小规模可先在自己的示教上做遮挡消融。",
+      "score": 8,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "预训练",
+        "指令跟随",
+        "RealSense D435",
+        "RealSense D435i",
+        "RealSense D405",
+        "Franka FR3",
+        "真机"
+      ]
+    },
+    {
+      "title": "BeyondEgo: Learning to Act Beyond Egocentric Perception via Humanoid Ego-Exo Foresight",
+      "authors": [
+        "Zhaoshan Yang",
+        "Chenglei Li",
+        "Haoyu Lei",
+        "Yutao Zhang",
+        "Yuyu Yang",
+        "Zhuo Chen",
+        "Ling Ding",
+        "Zhongxing Ren",
+        "Yi Gu",
+        "Heyang Zhang",
+        "Peng Su",
+        "Jin Pan"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.27047",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：人形腿臂操作里，只靠头部第一人称的 VLA 会看不到身体和场景的关键关系，纯模仿动作也不监督未来场景怎么变。做法：BeyondEgo 在空间上用冻结的 DINOv3 编码同步外视，token 拼到第一人称 VLM 特征上再送给动作专家；时间上用两个视角 0.6 秒后的观察做特权监督，训练一个残差适配器（4.2M 参数）和预见专家。部署时丢掉预见专家，只保留适配器。作者同时提出 HELM：据称首个带同步第一人称/外视的闭环人形腿臂基准，五个全身任务，在 Isaac Sim 渲染、MuJoCo 物理、SIMPLE 运动控制下评测，本体是 29 自由度 Unitree G1 加 Dex3 手。",
+      "analysis_zh": "结果：五个任务都是拿起饼干盒、走到目标桌并放入容器，但关键线索在头戴相机视野外或前方。自动流水线用 CuRobo 出轨迹、MuJoCo 回放、Isaac Sim 渲染同步双视，共 500 条示教。分布内每任务 10 次，BeyondEgo 平均成功率 92.0%，纯第一人称 Ψ 基线 48.0%，特征融合 84.0%。200 个布局/资产/材质/光照及组合偏移场景上，四者分别是 65.0%、23.5%、49.5% 和 55.0%。外视相机放在中央时泛化最好（T1 上 77.5%），左侧遮挡更严重时只有 60.0%。局限：必须有外视覆盖和同步双视图像；大幅度移动时外视可能跟丢；双视示教采集更贵；文中外视都是标定好的固定相机；基准只覆盖仿真里的一台 G1 和五个任务，没有真机。评测框架 SIMPLE 的代码在 https://github.com/physical-superintelligence-lab/SIMPLE ，不是 BeyondEgo 方法本身的发布。",
+      "relevance_zh": "课题是腿臂协同，本体也是宇树，但 G1+Dex3 和 GO2+PiPER 的运动学、相机布置都不同。外视补第一人称盲区（倒退、侧向过窄道、脚下障碍）这个想法可以直接借鉴：GO2 头/背部相机加固定第三人称或臂上 D405，有可能缓解“走到桌边却看不见目标容器”一类失败。代价是要同步标定和采集双视数据，移动范围一大，固定外视就不够用。目前全是仿真，没有 G1 真机，更没有 GO2 部署，只能当方法参考和 HELM 式评测思路，不能当现成策略。",
+      "score": 7.5,
+      "priority": "中",
+      "tags": [
+        "腿臂操作",
+        "VLA",
+        "全身控制",
+        "Unitree G1",
+        "外视相机",
+        "HELM",
+        "Isaac Sim",
+        "仿真"
+      ]
+    },
+    {
+      "title": "Efficient VLA Reinforcement Learning via Subchunk Rollouts in Latent World Models",
+      "authors": [
+        "Nan Tang",
+        "Han-Tao Zhang",
+        "Jing-Cheng Pang",
+        "Hao-Nan Wang",
+        "Hao-Xiang Ren",
+        "Yi-Fei Sheng",
+        "Jun-Yin Ye",
+        "Tian Xu",
+        "Fan-Ming Luo",
+        "Hao-Xin Lin",
+        "Yang Yu"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.27645",
+      "categories": [
+        "cs.LG"
+      ],
+      "summary_zh": "问题：用模型强化学习改进预训练 VLA 时，现有方法多依赖大规模图像/视频生成世界模型，算力很重；潜空间世界模型更轻，但又有递推误差累积，以及和 VLA 视觉输入接口不对齐的问题。做法：LS-MBPO 是轻量残差 MBRL。Hierarchical Forcing 把稠密因果监督和自回归反馈结合起来抑制累积误差；Latent Subchunk Rollouts 用冻结 VLA 给出的动作块，再由潜空间残差策略逐段 refinement；Progress-Conditioned Branch-Start Curriculum 把 rollout 起点从任务后期逐步移到前期，以便用较短的想象轨迹学习。",
+      "analysis_zh": "结果：在 LIBERO 和 RoboTwin 上，LS-MBPO 全面高于 π0.5-SFT、RLT/Latent 的 BC 与 RL，以及 Dreamer。例如 LIBERO Spatial/Object/Goal/Long 为 92.0%/96.0%/84.8%/71.2%，对应 π0.5-SFT 为 78.4%/87.2%/73.6%/52.0%。LIBERO Long 上相对只用递归监督的世界模型，策略成功率从 68.0% 到 71.2%。和用生成式世界模型、微调整个 VLA 的 VLA-MBPO 比，LIBERO Long 成功率 71.2% 对 64.4%，世界模型训练 12 小时/4×RTX 5090，强化学习 1.5 小时/1×RTX 5090，算力明显更低。真机在 ALOHA 的两项操作上，LS-MBPO 高于 π0.5-SFT 和 Dreamer，正文用图给出对比，没有再列精确百分比。局限：想象 rollout 仍不是全时域；稠密进度奖励在专家分布外不可靠，作者仍用 0/1 成功奖励；跨本体、跨任务的通用潜空间世界模型还没做。文中出现的 VLARLKit 是对照方法引用，不是本文代码发布。",
+      "relevance_zh": "如果已经有能在 PiPER 上跑的 π0.5 一类 VLA，这篇提供一条相对省算力的残差强化学习路径，不必再训大型视频世界模型。真机验证在 ALOHA 双臂上，和 GO2+PiPER 还要重新对接观测和动作块。先在 LIBERO 或自己的桌面仿真里复现残差 MBRL，再考虑真机。对四足步态和腿臂耦合没有直接实验，走路时的接触动力学是否能用短想象轨迹覆盖，文中没有回答。",
+      "score": 7.5,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "模型强化学习",
+        "世界模型",
+        "LIBERO",
+        "RoboTwin",
+        "ALOHA",
+        "真机"
+      ]
+    },
+    {
+      "title": "GenPA: Image Generators as Efficient Robot Policies",
+      "authors": [
+        "Zian Deng",
+        "Tianyi Zhang",
+        "Zilong Zheng",
+        "Ziyu Liu",
+        "Tao Zhang",
+        "Yao Lyu",
+        "Shengbo Eben Li"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.27446",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：不少工作把“预测未来画面”当作生成预训练接到机器人控制的中心环节，即使推理时已经不再生成未来图像，训练里仍保留这个目标。作者认为图像生成预训练学到的指令跟随、空间理解和视觉想象，不必经过未来视觉预测也能做控制。做法：GenPA 在图像生成骨干上微调一个 1900 万参数的动作回归适配器，并用骨干原生的生成目标做感知联合训练。原生图像编辑接口可以换不同视觉目标，而无需专门的感知头，从而在同一套策略里比较当前场景感知、未来预测及其组合。部署时只需一次骨干前向和动作回归，不再做视觉生成或迭代动作去噪。",
+      "analysis_zh": "结果：没有额外的大规模机器人数据预训练，LIBERO 平均成功率 99.10%，LIBERO-Plus（同一检查点、10030 个扰动实例）83.79%。在单卡 H100 上，编译后每个动作块 20.9 ms，相对对照 VLA/WAM 快 1.7–3.4 倍。消融显示当前深度监督是简单有效的配方，例如把某设置下的 LIBERO-Plus 从 70.87% 提到 76.69%；加上未来目标并不总是更好。真机是一台未在正文点名型号的双臂平台，只控右臂，观察为头、腰、右腕三路 RGB，训练时用深度相机做当前深度联合训练，部署不输入深度；600 条遥操作示教，任务是拔下 USB 并插入固定端口，标准/背景干扰/手机灯光三种条件各 50 次。GenPA 平均 78.0%，ImageWAM 70.0%，π0.5 58.0%，灯光条件仍然最难（52.0%）。项目页：https://deng-zian.github.io/GenPA-website/ 。局限：灯光扰动下成功仍明显下降；真机平台型号未写明，复现硬件接口要自己对齐。",
+      "relevance_zh": "当前深度监督这条训练配方和 RealSense D435i/D405 很合得来：训练看深度、部署可以只跑 RGB，减轻真机深度噪声的影响。低延迟回归头也适合桌面上的闭环抓取。真机是接触丰富的插拔，不是移动操作，双臂平台型号未知，不能直接搬到 PiPER。若要试，需要图像生成骨干和较大 GPU（文中真机部署用 RTX PRO 6000），先在 LIBERO 或 PiPER 仿真里验证深度联合训练是否同样有效。",
+      "score": 7.5,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "图像生成",
+        "深度监督",
+        "高效推理",
+        "LIBERO",
+        "接触操作",
+        "真机"
+      ]
+    },
+    {
+      "title": "Learning from Incomplete Actions: Interval Motion Supervision for Vision-Language-Action Policies",
+      "authors": [
+        "Yunpeng Mei",
+        "Chenyu Wang",
+        "Xiaowen Zhu",
+        "Chenbo Xin",
+        "Hongjie Cao",
+        "Yiyuan Li",
+        "Chengye Zhang",
+        "YuAn Wang",
+        "Gang Wang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.27171",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：用第一人称视频给示教做视觉标注时，动作监督常出现连续缺口；缺口两端仍可靠的位姿，至少能给出这段净平移和转动。做法：在可靠局部动作上照常做 flow matching，同时用组合目标约束缺口内估计动作的总位移；当缺口超过策略视野时，把多个固定窗口拼起来。一条共享的区间分支从可靠端点学习，并提供组合约束的目标。",
+      "analysis_zh": "结果：LIBERO 上只用 20% 示教、且 70.5% 动作为缺失时，主方法三次训练平均成功率 87.9%；在观察暴露和训练代价对齐的一对比较里，比简单掩码高 10.5 个百分点。把 Ego 缺口迁到 RoboTwin 后，成功率 45.4%，掩码为 40.3%。真机是 DexTeleop TeleAvatar Lite 双 7 轴臂，头部双目鱼眼加两路腕部 RGB-D，控制 20 Hz，微调 π0 全身参数。五个任务（折毛巾、摘花、拾纸卷、拾垃圾、叠方块）各 20 条机器人遥操作和 160 条 Ego 示教，每任务 50 次评测，平均成功率 59.6%，仅区间 flow matching 为 54.8%，掩码 48.8%，只用机器人示教 42.0%。局限：端点和局部标签都依赖视觉估计及到机器人控制的映射，跟踪失败会偏置端点；接触和控制器跟踪误差也会让指令运动和实测运动对不齐。",
+      "relevance_zh": "如果准备用头戴或第三视角视频给 GO2+PiPER 补数据，视觉标注一定会出现缺口，这篇给出的是“局部可靠动作 + 区间净运动约束”，比直接丢掉缺口或拿低置信标签硬训更稳妥。真机不是宇树或松灵，鱼眼加腕部 RGB-D 的配置也和 RealSense 挂载方式不同，不能直接套模型。值得借鉴的是标注筛选和区间损失，可以先在 PiPER 遥操作数据里人为挖缺口做对照实验。",
+      "score": 7,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "模仿学习",
+        "不完整标注",
+        "Ego 数据",
+        "flow matching",
+        "遥操作",
+        "真机"
+      ]
+    },
+    {
+      "title": "RoboDyna: A Benchmark for Evaluating Robotic Manipulation under Physically Grounded Dynamics",
+      "authors": [
+        "Zhiyuan Li",
+        "Rui Heng Yang",
+        "Xuan Zhao",
+        "Amir Rasouli"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.26969",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：现有物理基准多测预测精度而不测闭环动作；动态操作基准又常用简化、物理上不合理的物体运动；评测还经常在推理时把环境冻结，于是计算耗时不影响任务成败。做法：RoboDyna 评的是动态场景里策略的物理理解和闭环行动，含 20 个概念性动态任务（五类能力、双因素难度、场景尽量简单）和 10 个家居任务（同一组能力放进更丰富的仿真家居）。提供 3500 条专家示教、同步与异步两套协议、成功和部分完成指标，以及人类基线的交互工具。",
+      "analysis_zh": "结果：作者在 5400 条回合上评了多套 VLA 和一个世界动作模型，所有策略成功率都低于 20%。世界动作模型能抓住简单物理动态，复杂交互仍差，而且预测精度并不稳定地对应任务成功。同步/异步对照显示，推理延迟会翻转 5–12% 的回合结果，但平均成功率变化不超过 3%。人类基线在相同条件下明显强于所有策略。项目页：https://robodyna.github.io/robodyna/ 。新意是把物理上站得住的动态、闭环动作和推理耗时放进同一套评测。局限：目前是仿真基准，正文没有对应的真机动态任务；策略普遍失败说明难度高，但也意味着它暂时更适合当诊断工具，而不是马上能刷出可迁移的高分。",
+      "relevance_zh": "GO2 在真实桌边操作时，物体滑动、倾倒、被碰到后继续动，都比静态 LIBERO 更近这篇的设定。可用来检查现有 VLA 在动态场景和异步推理下会差多少，尤其是 PiPER 推理一旦超过控制周期。它不提供 GO2 或 PiPER 的任务包，也不能替代真机评测。若项目页随基准放出仿真和示教，适合作为附加测试集，而不是当前主实验平台。",
+      "score": 6.5,
+      "priority": "中",
+      "tags": [
+        "基准",
+        "动态操作",
+        "VLA",
+        "物理推理",
+        "异步评测",
+        "仿真"
+      ]
+    }
+  ]
+}

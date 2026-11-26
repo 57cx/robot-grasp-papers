@@ -1,0 +1,373 @@
+{
+  "date": "2026-11-25",
+  "source_query": "基于 data/arxiv_raw/2026-11-25.json（arXiv API 自动抓取，回溯 7 天，窗口 2026-11-18 13:13 至 2026-11-25 13:13 北京时间，fetched_at 为 2026-11-25T13:13:51+08:00）。该文件共 45 篇未解读候选；从中选出与腿臂操作、移动操作、精细抓取、手眼标定、四足定位及 GO2+PiPER 最相关的 12 篇。每篇标题、作者、链接已对照 export.arxiv.org 的 arXiv API 摘要记录核对一致（查询时间约 2026-11-26T01:52:24Z）。解读当日（2026-11-26）的 raw 文件在 main 上尚未出现（抓取 Action 通常在北京时间 10:20 之后落地）。11-23、11-24 已有解读，且与本批候选无 arXiv ID 重叠。未收录自动驾驶 VLA 剪枝、多机协作运输、织物操作基准、纯算力加速，以及大量没有腿臂或抓取落点的通用 VLA 训练技巧论文。11-22 的 raw 条目数为 0；本批只处理最新未解读文件 11-25。",
+  "overview_zh": "11-26 的 raw 还没上主分支，这次读的是最新未解读的 11-25 候选，一共 45 篇。最值得先看的，是两篇直接对上 han 硬件的真机工作。Wrist Video Policy 把腕部相机轨迹当成跨本体的统一动作接口，位姿估计器在公开数据上训完后，零微调搬到 Franka Panda、PiPER-X 和 Galaxea R1 Pro；项目页给出 PiPER-X 四个任务、每任务 10 次的平均成功率为 50.0%。AirLeg 是自监督的视觉-惯性-腿 SLAM，在工业级 ANYmal D 的 GrandTour 17 条序列上平均轨迹误差 0.19 m，并在低成本 Unitree Go2 + RealSense D455 + Jetson AGX Orin 上用约 0.5 小时无标注数据把平均漂移做到约路程的 0.6%，论文声明会发布代码和数据。第二条线是腿臂协同和数据成本：EgoLoAF 在 Unitree G1、LinkerHand O6 和头部 RealSense D435 上，只用第一人称视频、不用动捕和真机遥操作，四项真机任务的平均进度分 73.1，接近遥操作基线的 74.4。第三条线是少样本到真机的桥：RESET 用一条真机演示重建可验证仿真世界，仿真未见布局平均成功率 97%，四台真机 280 次试验成功率 80%；DRIFT 用冻结视觉编码器和光栅化仿真做单阶段视觉强化学习，三个操作任务的真机平均成功率相对两阶段蒸馏提高 58.8%。另外，Seeing Is Not Reaching 指出 VLA 在物体被挪走后仍伸向训练位置，并给出免训练的通路分离引导，代码已公开。3D 方面，Hi3R-VLA 和 WeaveVLA 都把相对几何显式写进动作，适合后续接 D435i/D405 点云。整体看，今天不是再堆通用 VLA 技巧，而是有几篇可以直接对照 PiPER-X 腕部相机、GO2 定位和仿真到实物来读。",
+  "items": [
+    {
+      "title": "Wrist-Camera Video Diffusion as Generalizable Robot Policies",
+      "authors": [
+        "Jingyuan Liu",
+        "Yongwei Chen",
+        "Yishan Yang",
+        "Zexin He",
+        "Xingang Pan",
+        "Zhi Hou"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.31079",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：通用操作策略要能做新任务、进新场景，还要把技能迁到不同本体，但各本体的运动学、外观和动作空间都不一样。做法：Wrist Video Policy（WVP）用腕部相机轨迹作为统一接口，因为相机刚连在末端上，固定手眼变换就能把相机轨迹还原成末端位姿。系统把预测未来腕部画面的视频生成器，和从预训练 3D 模型改来的位姿估计器拼在一起；模型拼接把生成器的预测潜变量直接映射到估计器的中间特征，不必先解码成 RGB。任务知识可以靠大量人类和机器人视频扩展，几何运动估计则在任务和本体之间复用。部署时用手眼标定和逆运动学把相机运动转成关节目标，执行一小段后再根据新观测重规划。项目页：https://wrist-video-policy.github.io。",
+      "analysis_zh": "结果：位姿估计器先在五个公开机器人数据集的腕部视频和轨迹上适配，再零微调用到 Franka Panda、PiPER-X 和 Galaxea R1 Pro。项目页给出三台机器各四个任务、每任务 10 次的平均成功率：R1 Pro 72.5%，Panda 52.5%，PiPER-X 50.0%，覆盖桌面和洗衣房，包括铰接装置、透明物体和变形物体；摘要写零样本分布外评估成功率超过 50%。同一套 Franka 设置下，换用同一视频生成器时，WVP 在四个任务上都高于 VERA 的雅可比逆动力学，也超过 π0.5，并与 Cosmos3-Nano-DROID 相当。局限：PiPER-X 的 50% 仍明显低于 R1 Pro，跨本体还没有对齐到同一水平；摘要和项目页没有给出开源代码仓库，也没有写明腕部相机型号和手眼标定精度。视频生成加几何估计的机载时延，部署前要自己测。",
+      "relevance_zh": "这是今天和 han 硬件对得最死的一篇操作论文：评测里就有 AgileX PiPER-X，而且明确依赖固定手眼变换。如果把 D405 或小体积 RGB 相机刚装在 PiPER / PiPER-X 末端，这篇的“腕部视频规划 + 几何还原末端位姿”可以直接对照。GO2 只是移动底座，不在这篇的动作空间里，先在固定或站稳的臂上复现更合适。复现前提是手眼标定要准，还要有可用的视频生成器和逆解；位姿估计器号称不用按本体再微调，值得先在自己的 PiPER-X 上做零样本对照，不要一上来就重训生成器。",
+      "score": 9.5,
+      "priority": "高",
+      "tags": [
+        "腕部相机",
+        "手眼标定",
+        "视频扩散",
+        "跨本体",
+        "抓取",
+        "AgileX PiPER-X",
+        "真机"
+      ]
+    },
+    {
+      "title": "AirLeg: A Robust and Accurate Self-Supervised Visual-Inertial-Leg SLAM System",
+      "authors": [
+        "Kuan Xu",
+        "Tianxin Hu",
+        "Ruofei Bai",
+        "Ruimeng Liu",
+        "Yuefan Hao",
+        "Zeyu Jiang",
+        "Zitong Zhan",
+        "Shenghai Yuan",
+        "Chen Wang",
+        "Lihua Xie"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.32523",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：视觉-惯性-腿（VIL）定位给四足加一台相机就能用，但学习式腿部里程计的监督很麻烦：仿真训练有 sim2real 缺口，真机标签又依赖昂贵传感器，或会把视觉估计的误差学进去。做法：AirLeg 先在仿真里预训练腿部里程计，再在没有真值的情况下用命令式学习适配真机——多传感器光束法平差用腿部里程计改进视觉地图，地图再反过来监督网络；部署时融合估计还会在线适配。双窗口估计器融合视觉、IMU 和腿部里程计，用考虑足端变形的约束把承重足和视觉重建地形联系起来，并用方差分量估计给约束加权。项目页：https://sairlab.org/AirLeg_homepage/。",
+      "analysis_zh": "结果：在 ANYmal D 采集的 GrandTour 上，AirLeg 跑完全部 17 条序列，平均轨迹误差 0.19 m，是 19 种方法里唯一所有序列误差都低于 0.4 m 的。正文还给出在低成本 Unitree Go2 上的真机：机载 Intel RealSense D455 和 NVIDIA Jetson AGX Orin，立体图像 640×480、10 Hz，本体 IMU 和关节编码器 500 Hz；只用约 0.5 小时无标注数据做自监督适配，10 条共 1.8 km 测试序列的平均漂移约为路程的 0.6%，并在嵌入式上实时运行。论文写明会发布代码和数据集。局限：在 GrandTour 的结冰（ICE-1）和软沙（RIV-1）上，它仍不如最好的对照方法（0.31 m / 0.29 m，对照最好为 0.02 m / 0.13 m），因为冰上腿部里程计不可靠。Go2 上视觉惯性方法还会被腿部振动抬高 IMU 噪声，换传感器套件时要把这点算进去。这篇解决的是定位，不是抓取或手臂控制。",
+      "relevance_zh": "真机就是 Unitree Go2，相机是 RealSense 系列（D455；han 的是 D435i / D405），还在 Jetson 上实时跑，和 han 的移动操作定位需求非常贴近。GO2 EDU 自带 IMU 和关节编码器，再加外视 D435i，传感器配置对得上，只是立体规格、安装外参和机载算力要自己对齐。0.5 小时无标注适配降低了复现门槛，值得先在自己的 GO2 上做开环走一段看漂移。注意它不控制 PiPER，也不做抓取；是给腿臂系统提供可靠的本体定位。D455 和 D435i 的基线、视场不同，外参标定和足端接触质量会直接影响效果，不要假定数字能原样搬过来。",
+      "score": 9.5,
+      "priority": "高",
+      "tags": [
+        "四足",
+        "SLAM",
+        "视觉惯性",
+        "腿部里程计",
+        "sim2real",
+        "Unitree Go2",
+        "RealSense",
+        "真机"
+      ]
+    },
+    {
+      "title": "EgoLoAF: Learning Humanoid Loco-Manipulation from Egocentric Demonstrations with Hand-Object Affordances",
+      "authors": [
+        "Yiming Zeng",
+        "Jiangyuxuan Dai",
+        "Yuheng Na",
+        "Tan Zhu Xuan",
+        "Zihan Lin",
+        "Xinfang Qi",
+        "Shijian Zhang",
+        "Chengqi Shi",
+        "Yihan Kuang",
+        "Zhide Zhong",
+        "Junjie He",
+        "Junfeng Li",
+        "Zimu Han",
+        "Naipeng Li",
+        "Haoang Li"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.32260",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：人形 VLA 的训练严重依赖昂贵的真机遥操作；把第一人称人类演示转成机器人数据的方法，大多还要可穿戴动捕，手物交互线索也不显式，不少还要混入真机遥操作做后训练。做法：EgoLoAF 声称是首个完全从第一人称演示得到人形 loco-manipulation 训练数据、且不用动捕的范式。从记录的相机位姿估计躯干运动，从视频重建双手轨迹，并用手相对物体的当前位姿作为手物 affordance；后训练时把这些 affordance 经交叉注意力注入动作专家，视觉-语言骨干冻结，也不使用真机遥操作演示。同时发布 128,400 条第一人称演示（约 1,000 小时、1,284 个任务），以及转换后的人形动作轨迹和渲染的机器人视角观测。",
+      "analysis_zh": "结果：真机平台是 Unitree G1、LinkerHand O6 灵巧手和头部 Intel RealSense D435。四项真机任务（纸巾入盒、入低箱、双手抓毛绒入托盘、走到柜前半蹲放入并关双门）各用 150 条第一人称演示后训练独立的 π0.5 策略，每项 20 次试验。EgoLoAF 的平均任务进度分（TPS）为 73.1，遥操作基线为 74.4，数据采集效率平均提高 4.03 倍。长程入柜任务上 65.8 对 66.0，几乎持平。新意是去掉动捕和真机遥操作数据，还把手物相对位姿显式喂给动作头。局限：平台是人形加灵巧手，不是四足加平行夹爪；躯干和手轨迹来自视频估计，接触精度受估计误差限制。摘要没有声明策略训练代码仓库。对比用的是进度分而不是严格成功率，阅读时要看各子任务的给分标准。",
+      "relevance_zh": "课题就是腿臂一体的移动操作，这条“第一人称视频 → 全身动作 + 显式手物线索”对 GO2 驮 PiPER 很有启发，而且头部相机就是 RealSense D435，和 D435i 同一系列。但不能直接部署：G1 的双臂、腰和灵巧手，跟 GO2 的点和 PiPER 夹爪运动学差得很远，转换管线要重做（用机身/相机轨迹估计底盘和躯干，用手轨迹对 PiPER 末端）。数据规模和“后训练不用真机遥操作”值得借鉴，尤其是想降低遥操作成本的时候。建议先读他们的数据转换和 affordance 注入，再决定要不要在 GO2+PiPER 上做小规模对照，而不是指望开箱即用。",
+      "score": 8.5,
+      "priority": "高",
+      "tags": [
+        "loco-manipulation",
+        "VLA",
+        "第一人称演示",
+        "affordance",
+        "Unitree G1",
+        "RealSense D435",
+        "真机"
+      ]
+    },
+    {
+      "title": "RESET: One Demonstration, One Verified World, Self-Improved Skills Across Embodiments",
+      "authors": [
+        "Zheng Sun",
+        "Zhuo Li",
+        "Zhihao Li",
+        "Hengyi Sim",
+        "Ge Wang",
+        "Ziyue Zhu",
+        "Mingkai Jia",
+        "Fei Chen"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.31894",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：大模型编程智能体可以在仿真基准里迭代改进操作技能，但真机任务既没有现成的成功评分器，也没有可反复重置的练习环境。做法：RESET 利用一条真机演示同时给出场景几何、终端成功判据，以及校验世界保真度的物理参考轨迹，并且这些信息与源机器人运动学解耦。流程是 Rebuild（重建接触丰富的世界并得到只读判据）、Examine（开环回放和轮廓一致性检查）、Self-improve（按节点失败证据进化白盒任务图和技能代码）、Execute（真机部署冻结代码，运行时不再调用大模型）、Transfer（把已验证世界和判据分给未见过的机器人，不再采集新演示）。项目页：https://zainzh.github.io/RESET。",
+      "analysis_zh": "结果：8 个操作任务各由一条真机演示重建后，在仿真未见布局上平均成功率 97%，零样本代码 27%，按任务微调的 π0.5 为 31%，Diffusion Policy 为 50%。注入重建缺陷的实验表明，练习能容忍不少重建误差，但几何误差仍可能让练习停住或走偏，检查能标出其中大部分，其余靠物理随机化覆盖。在共享世界里，3 台异构机器人在没有目标本体演示的情况下获得同一任务技能：相近手臂的机器人能原样复用 95% 的技能函数，手臂和手不同的则自己重写。真机上，得到的程序在 4 台机器人上跑，280 次试验成功率为 80%。局限：摘要没有点名这 4 台机器人的型号，也没有列出 8 个任务的分项成功率；重建质量和几何检查如果对 PiPER 的接触任务失效，后续自我改进会被带偏。运行时虽然不再调用大模型，但重建和代码进化阶段仍然依赖编程智能体。",
+      "relevance_zh": "“一条演示重建世界，再把技能迁到别的手臂”对只有 GO2+PiPER、采集预算有限的设置很有吸引力，也和 Diffusion Policy、π0.5 做了对照。跨本体迁移时，运动学相近能复用大部分技能代码，PiPER 和论文里的源手臂是否足够像，要等对照正文里的机型再判断。复现路径是：先对一个桌面抓取任务采一条演示，按他们的检查协议看数字孪生是否过关，再谈迁到 PiPER。没有开源仓库的明确声明，项目页可以先看任务和视频。和四足行走无关，适合在固定底座或站稳后做操作技能，不要指望它同时解决 GO2 步态。",
+      "score": 8.5,
+      "priority": "高",
+      "tags": [
+        "Real2Sim2Real",
+        "编程智能体",
+        "跨本体",
+        "Diffusion Policy",
+        "少样本",
+        "真机"
+      ]
+    },
+    {
+      "title": "One Phase Is Enough: Sim-to-Real Transfer with Direct Visual Reinforcement Learning",
+      "authors": [
+        "John Marangola",
+        "Antonia Bronars",
+        "Younghyo Park",
+        "Stephen Andrews",
+        "Kushal Kedia",
+        "Pulkit Agrawal"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.31588",
+      "categories": [
+        "cs.LG",
+        "cs.RO"
+      ],
+      "summary_zh": "问题：仿真到真机的强化学习里，常见做法是先用特权状态训练教师，再把行为蒸馏到视觉学生，但学生常常明显弱于教师；直接在视觉上做强化学习又会因为从零学视觉表征而样本效率低。做法：DRIFT 用测试时就能拿到的图像观测，做单阶段视觉强化学习。关键是冻结预训练的基础视觉编码器，让强化学习把力气花在控制上；冻结编码器避免对视觉骨干反传，其预训练表征也让策略能从快速光栅化仿真迁移到真机。项目页：https://jmarangola.github.io/one-phase-visual-rl/。",
+      "analysis_zh": "结果：在匹配的架构、观测和算力预算下，DRIFT 优于两阶段蒸馏，三个操作任务的真机平均成功率相对提高 58.8%。项目页写明策略零样本迁到真机，不使用演示、教师-学生蒸馏或真机策略训练数据。受控仿真里，相对优势从分布内大约 9% 扩大到分布外超过 61%。编码器消融显示，仿真里表现好并不保证真机迁移，DINOv3、SigLIP2 等预训练选择会影响迁移。局限：摘要和项目页没有给出三台/三个任务的分项真机成功率和具体机械臂型号；也没有声明官方代码仓库。光栅化仿真和真实 RealSense 图像之间的外观差，仍然要靠域随机化或自己补。",
+      "relevance_zh": "如果 han 想少采演示、直接从仿真视觉策略迁到 PiPER 桌面任务（推、插销一类），这条单阶段配方比先训特权教师再蒸馏更值得试。观测是 RGB，D435i/D405 都能供图；深度没有被当作必要输入。复现关键是选对冻结视觉编码器和足够快的仿真渲染，真机侧还要对齐相机内参和动作空间。和四足、全身控制无关，先在固定臂上做操作任务更合适。在没有代码的情况下，可以先按“冻结 ViT + PPO + 光栅化仿真”的配方在一个任务上对照两阶段蒸馏。",
+      "score": 8,
+      "priority": "高",
+      "tags": [
+        "sim2real",
+        "视觉强化学习",
+        "冻结编码器",
+        "零样本迁移",
+        "操作"
+      ]
+    },
+    {
+      "title": "Seeing Is Not Reaching: Instruction Shortcuts Override Visual Grounding in Vision-Language-Action Models",
+      "authors": [
+        "Qing Zhang",
+        "Xuesong Li",
+        "Zhaoyuan Yang",
+        "Changlin Song",
+        "Xinyu Tian",
+        "Jing Zhang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.32206",
+      "categories": [
+        "cs.CV",
+        "cs.RO"
+      ],
+      "summary_zh": "问题：VLA 理应继承视觉-语言模型的视觉落地能力，但物体被挪走后，策略常常仍伸向训练时的位置。做法：在六个 VLA 上识别出两条捷径——场景捷径（新指令下仍执行原来的场景任务）和指令捷径（指令直接唤回目标物体的训练位置）。在 π0.5 里，即使物体名称的注意力已经跟着被挪走的目标走，指令捷径仍然存在，作者称之为 Seeing Is Not Reaching。通过分别遮罩图像中介的落地通路和指令到动作的直接通路，发现落地通路其实在引导动作，但常被直接通路上的指令捷径盖过。据此提出免训练的 Pathway-Separated Guidance（PSG），放大落地、压制捷径，也不需要外部目标位置。arXiv 注释给出代码：https://github.com/QZhang2111/psg。",
+      "analysis_zh": "结果：在 LIBERO-PRO Object 的位置扰动设置上，PSG 把伸向正确目标的比例从 22.0% 提到 52.6%，任务成功率从 16.6% 提到 40.8%，对原任务性能则大体保持。新意是把“看见了但伸不到”说成通路竞争，而不是简单认为模型没有视觉落地。局限：主要证据在仿真基准 LIBERO-PRO 上，摘要没有给出真机数字；52.6% 的目标伸达率仍然不高，只能减轻而不能消除捷径。是否对 GO2+PiPER 上微调过的具体 VLA 同样有效，需要自己做物体移位对照。六个 VLA 的名单和遮罩实现细节要以正文和代码为准。",
+      "relevance_zh": "han 如果用 π0.5 一类 VLA 在桌面上抓东西，物体位置一变就伸向旧位置，是很常见的失败模式。这篇提供了可复现的诊断和免训练补丁，代码已公开，适合先在仿真里复现，再在 PiPER 上做“物体平移后是否仍伸向训练位置”的小测试。和四足控制无关，但和精细抓取的视觉落地直接相关。PSG 不改权重，部署成本低，值得当作现有 VLA 的测试时插件来试，不要把它当成新的抓取检测器。",
+      "score": 8,
+      "priority": "高",
+      "tags": [
+        "VLA",
+        "视觉落地",
+        "指令捷径",
+        "免训练",
+        "LIBERO",
+        "开源"
+      ]
+    },
+    {
+      "title": "Hi3R-VLA: Grounding Semantics and Actions in 3D",
+      "authors": [
+        "Shizhe Chen",
+        "Paul Pacaud",
+        "Cordelia Schmid"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.31535",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：最近的 VLA 越来越多地引入 3D 几何，但怎样用它来做精确、可泛化的动作预测仍不清楚。做法：Hi3R-VLA 把视觉、语言和动作都落到显式 3D 几何上。空间对齐的视觉特征和语言条件被融合进点云表征；底层控制指令锚在同一 3D 坐标系，并用 3D-RoPE 增强的 action-to-point 注意力，在由粗到细的点特征上建模动作目标与观测点的几何关系。可训练参数少于 250M。项目页：https://cshizhe.github.io/projects/hi3r_vla.html。",
+      "analysis_zh": "结果：在 RoboCasa、RLBench、RoboTwin2、DexJoCo 和 DexSuite 上，覆盖单臂、双臂夹爪和灵巧手，论文报告为当时最优。项目页给出 RoboCasa24（每任务 50 条演示）平均成功率 78.8±0.8%，可训练参数 0.25B，高于多种 2D 和 3D 对照（如 SA-WAM 的 76.6±0.5%，π0.5 在 50 条演示下为 52.9%）。真机是 UR5，五个任务、每任务 10 次，与 π0.5 对比；项目页用部分成功分数和完全成功次数展示，摘要未给出总成功率数字。项目页写将发布模型、代码和数据。局限：真机是单臂 UR5，不是移动操作平台；点云质量、相机标定和多视角对齐会直接影响效果。具体代码仓库是否已经可下载，要以项目页当时状态为准。",
+      "relevance_zh": "D435i / D405 本来就能出点云，这篇把语义和动作都锚在同一套 3D 点上，比纯 RGB 的 VLA 更贴 han 的传感器。参数量不到 250M，比常见 π0.5 级模型轻，有利于后期在实验室机器上微调。复现需要可靠的点云（标定、深度滤波）和与 UR5 不同的 PiPER 动作空间适配。和四足、全身控制无关，适合先在固定或站稳的臂上做桌面抓取。若代码按承诺放出，这是今天 3D VLA 里最值得跟的实现之一。",
+      "score": 8,
+      "priority": "高",
+      "tags": [
+        "VLA",
+        "3D",
+        "点云",
+        "UR5",
+        "真机",
+        "Inria"
+      ]
+    },
+    {
+      "title": "Reading Geometric Anchors: Viewpoint Generalization in Imitation Learning for Robotic Manipulation with RGB-Only Deployment",
+      "authors": [
+        "Chengyu Tao",
+        "Chunxi Huang"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.32162",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：相机一挪，物体在图像里的位置就变，RGB 模仿学习很难泛化。常见做法是给合成新视角配上同一条示教动作，但忽略了跨视角应有的物理对应；预测深度再加标定的 3D 策略能处理一部分，又会碰上各视角观测点集不一致。做法：ReGeoAnch 在机器人基座系建全局锚点，在夹爪系建局部锚点，作为跨视角共享的物理参照。解耦的外观引导几何读出里，Point-to-Anchor Aggregation 在锚点周围聚合几何，不再依赖逐点对应；Anchor-to-Policy Readout 用视点不变的机器人状态查询、选出与任务相关的锚点，最终只用几何值构成读出。再用 Cross-View Readout Consistency 对齐源视角和合成目标视角的策略读出方向。部署时只需 RGB。",
+      "analysis_zh": "结果：在 MetaWorld 和 ManiSkill3 的 12 个操作任务上，作者报告视角泛化优于对照策略。新意是把“共享物理锚点 + 只把几何读进策略”当成视角不变的归纳偏置，而不是简单做视角增强。局限：摘要只覆盖仿真，没有真机结果，也没有给出具体成功率数字和开源代码声明。合成目标视角的质量和相机标定（训练阶段若用深度）仍然是隐式前提；部署号称只要 RGB，训练是否依赖深度和标定，要以正文为准。",
+      "relevance_zh": "GO2 一走动、或外视 D435i 和腕部 D405 换位置，示教策略掉点是马上会碰到的问题。这篇的锚点思路和“部署只用 RGB”对只有彩色图、深度不稳的场景有用。但目前停在仿真，复现价值主要是方法，不是现成权重。建议先在自己的 PiPER 示教数据上做相机平移/绕表拍摄的对照，看锚点读出是否比普通视角增强更稳，再决定要不要上真机。和四足步态无关。",
+      "score": 7.5,
+      "priority": "中",
+      "tags": [
+        "模仿学习",
+        "视角泛化",
+        "几何锚点",
+        "RGB",
+        "仿真"
+      ]
+    },
+    {
+      "title": "Real2Worlds2Real: Scaling Self-Improving Agentic Real2Sim2Real for Robot Manipulation",
+      "authors": [
+        "Jinzhong Gu",
+        "Jiakai Chen",
+        "Xinyi Cao",
+        "Yan Shen",
+        "Hangke Sui",
+        "Shutian Zheng",
+        "Xiang Xiao",
+        "Haoran Lu",
+        "Fan Xu",
+        "Lu Shi",
+        "Daochen Shi",
+        "Ruihua Zhang",
+        "Wei Zhan",
+        "Masayoshi Tomizuka",
+        "Ruihai Wu"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.31098",
+      "categories": [
+        "cs.RO"
+      ],
+      "summary_zh": "问题：真机交互数据贵，Real2Sim2Real 能把策略学习放到由真机观测支撑的仿真里，但要在多样任务和物理交互上规模化仍然很难。做法：Real2Worlds2Real 是一个自我改进的智能体框架，把可扩展的仿真世界构建和策略开发接在一起。给定有限视觉观测和任务描述，工具编排器构建忠实的数字孪生，再扩展成可物理执行的数字表亲；智能体按视觉和执行反馈选择工具、回看构建决策， 改进几何和物理行为。随后再按任务需求和仿真 rollout 反馈，协调数据生成、策略学习和 改进。两个阶段都会把已验证流程蒸馏成可复用技能，供后续任务使用。",
+      "analysis_zh": "结果：摘要写实验显示世界保真度提高，策略能成功迁回真机，增加世界多样性和交互数据量会带来性能提升，技能复用还能提高建世界效率和长程任务成功率。新意是把“建世界”和“训策略”都交给同一个会选工具、会回流的智能体，而不是只做一次重建。局限：摘要没有给出具体成功率、任务数、真机平台型号或开源代码；“成功迁移”的强度只能等正文和视频确认。智能体编排本身也引入了工具选择和反馈循环的不稳定性，复现成本可能不低。",
+      "relevance_zh": "和 RESET 同一天出现在少样本 Real2Sim2Real 这条线上，侧重点是规模化建多样数字表亲并自动训策略。对 GO2+PiPER 来说，如果只有少量 RealSense 观测，这条管线提供的是工作流而不是现成模型。在数字还不透明、代码未声明的情况下，建议先读正文里的真机设置和保真度指标，再决定是否值得投入重建工具链。不能替代 AirLeg 那样的四足定位，也不要假定数字孪生能自动处理点足和臂的耦合。",
+      "score": 7.5,
+      "priority": "中",
+      "tags": [
+        "Real2Sim2Real",
+        "数字孪生",
+        "智能体",
+        "操作",
+        "真机"
+      ]
+    },
+    {
+      "title": "ACAP: Asynchronous Coding Agents for Efficient Robot Control",
+      "authors": [
+        "Zexin He",
+        "Rui Li",
+        "Yushi Lan",
+        "Chengkai Jin",
+        "Zhi Hou",
+        "Xingang Pan"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.31205",
+      "categories": [
+        "cs.RO",
+        "cs.MA"
+      ],
+      "summary_zh": "问题：编程智能体可以在执行过程中编写和修改机器人行为，但用一个智能体管整台机器人，会拖慢本来可以并行的工作。做法：ACAP 把一台机器人组织成一组持久智能体，每个成员负责一个可配置的控制组，例如一条手臂加夹爪，或躯干加底盘，从而异步推理和执行。再用一个超智能体分配任务、协调依赖，并在主导智能体和成员之间动态分配控制权，让独立工作并行，必要时再做紧耦合操作。项目页：https://projects.zxhezexin.com/acap。",
+      "analysis_zh": "结果：72 次真机 rollout、覆盖 25 个任务/平台设置，相对单一智能体 Direct Policy，任务均衡后的时间成本降低 28.2%，在 Fully Parallel、Parallel-Sequential 和 Collaborative 三类任务上都有改进。全部 8 个 Collaborative 设置里，ACAP 的平均时间成本也低于只让成员控制各自组别的 Fixed Delegation。另外 90 次 rollout 的研究中，六个任务上 30 分钟封顶的平均时间成本都低于 Direct。作者还用同一套成员接口演示了底盘和躯干控制的移动操作，并提供包含观测、生成程序、动作和反馈的真机 rollout 数据集。局限：摘要没有点名具体底盘和手臂型号，也没有给出操作成功率，主要指标是耗时；编程智能体在环的稳定性、失败恢复和安全约束要以正文为准。",
+      "relevance_zh": "把手臂和底盘拆成可异步的控制组，并保留一个协调器处理依赖，这和 GO2 驮 PiPER 的移动操作很像：走过去和伸手抓可以部分并行，靠近目标时又必须协同。复现不是搬现成策略，而是借鉴这套成员接口和超智能体调度，在自己的 ROS/ROS2 里把底盘速度和手臂运动分开规划。需要注意 GO2 是点足而不是轮式底盘，异步走和抓时的平衡、踩空风险要自己加约束。数据集对研究编程智能体在真机上怎么改代码有用，但不等于可以直接控 PiPER。",
+      "score": 7.5,
+      "priority": "中",
+      "tags": [
+        "移动操作",
+        "编程智能体",
+        "异步控制",
+        "全身协调",
+        "真机"
+      ]
+    },
+    {
+      "title": "Exploratory Midtraining for Robot Policies",
+      "authors": [
+        "Kshitiz",
+        "Zheyuan Hu",
+        "Robyn Wu",
+        "Yizhou Li",
+        "Yunchu Zhang",
+        "Vattanary Tevy",
+        "Kavya Tayal",
+        "Shawn Yin",
+        "Aykut Onol",
+        "Kushal Arora",
+        "Dhruv Shah",
+        "Abhishek Gupta",
+        "Zackory Erickson",
+        "Aviral Kumar"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.33130",
+      "categories": [
+        "cs.RO",
+        "cs.LG"
+      ],
+      "summary_zh": "问题：机器人策略大多从强调“会做对”的人类数据里学，缺少能把困难状态连回可继续推进状态的低层行为覆盖。做法：用一种 midtraining 来建立这种“连通的行为覆盖”。作者提出 β-Data，通过对抗式遥操作采集——一名人类对手可逆地扰动环境，操作员不重置、继续完成任务；再把轨迹片段用自然语言标注局部结果，并在近期动作历史上对预训练策略做微调。项目页：https://kshitiz-1225.github.io/exploratory-midtraining-robot-policies/。",
+      "analysis_zh": "结果：摘要称在仿真操作和三个真机平台上，数据缩放更好，零样本泛化更好，也能更有效地利用更长的 rollout 时间；在线微调时，收集到成功经验所需的 rollout 更少、成功率更高。项目页补充了仿真打包和真机数字：12 个分布外仿真任务、5.2 小时数据、6 分钟时限下，β-DATA 成功率 69.3%，标准演示 58.7%；双臂 xArm 真机打包在线微调后，成功率从 60.0% 到 85.0%（20 次试验），标准演示则停在 20.0%，且 β-DATA 只用 28 条 rollout，标准演示用了 82 条。真机平台还包括 YAM 和 Raiden YAM 上的拆积木、折衣等任务。局限：采集需要两个人（对手 + 操作员），比普通遥操作更贵；0.65 小时小预算时 β-DATA 反而更差（6.0% 对 16.5%），数据太少时对抗扰动可能帮倒忙。摘要未声明代码仓库。",
+      "relevance_zh": "han 如果已经在做 PiPER 遥操作采集，这篇最大的用处是采集协议：不要只录成功示范，可以让第二个人在不破坏可恢复性的前提下扰动物体和场景，再给片段加局部语言标签。真机结果主要在 xArm / YAM 上，不是 GO2+PiPER，策略结构（从 π0.5 出发、加动作历史）要按自己的本体改。对抗采集的人力成本要计入计划，小数据阶段先不要上。和四足步态无关，但对提高桌面抓取策略的恢复能力和在线改进很有参考价值。",
+      "score": 7.5,
+      "priority": "中",
+      "tags": [
+        "遥操作",
+        "midtraining",
+        "在线微调",
+        "数据收集",
+        "真机"
+      ]
+    },
+    {
+      "title": "WeaveVLA: 3D Relational Grounding for Vision-Language-Action Models",
+      "authors": [
+        "Zien Wang",
+        "Yuhao Pan",
+        "Yunfeng Fan",
+        "Nan Cheng",
+        "Xin Xia",
+        "Wenchao Xu"
+      ],
+      "arxiv_url": "https://arxiv.org/abs/2611.31126",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "summary_zh": "问题：VLA 虽然借用了预训练的视觉-语言表征，但对任务相关的 3D 关系、以及这些关系在操作过程中如何变化，理解大多是隐式的。做法：WeaveVLA 用任务条件的稀疏图网络编码物体、夹爪和附近参照之间的相对 3D 关系；每条边上的循环状态跨观测整合几何证据，保持演化中的空间上下文；学习到的查询再把更新后的图读成紧凑关系 token，与原来的视觉-语言上下文一起条件化动作专家。另外用辅助几何重建目标促进空间结构保持。实现在 StarVLA-GR00T 和 π0.5 上。",
+      "analysis_zh": "结果：两个骨干在 LIBERO 上的平均成功率都超过 98%。在 LIBERO-Plus 上，分别从 74.9% 提到 82.0%，以及从 85.7% 提到 87.8%，CALVIN D→D 也有额外提升。三项真机任务上，基于 StarVLA-GR00T 的变体在标准条件下平均成功率从 55.6% 提到 70.0%，在分布外扰动下从 33.3% 提到 53.3%，两种设置都超过 π0.5 基线。局限：摘要没有写出三项真机任务和机械臂型号，也没有声明代码；相对 3D 关系依赖物体和夹爪的 3D 估计，检测或深度一差，图就会错。LIBERO 接近饱和，更有信息量的是 LIBERO-Plus 和真机 OOD。",
+      "relevance_zh": "和 Hi3R-VLA 一样走显式 3D，但侧重点是物体-夹爪-参照的相对关系及其跨时间维持，这对“先看准再伸手”的精细抓取很有用。D435i/D405 可以提供相对 3D，前提是物体和夹爪都能稳定进图。真机有提升，但平台不明，不能假定能直接跑在 PiPER 上。建议和 Hi3R-VLA 对照着读：一个把语义锚进点云，一个维护关系图，都比只靠 RGB token 更适合深度相机。若只选一个先跟实现，优先看有项目页和代码承诺的 Hi3R-VLA。",
+      "score": 7.5,
+      "priority": "中",
+      "tags": [
+        "VLA",
+        "3D",
+        "关系图",
+        "LIBERO",
+        "真机"
+      ]
+    }
+  ]
+}

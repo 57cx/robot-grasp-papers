@@ -1,0 +1,14 @@
+{
+  "date": "2026-11-27",
+  "timezone": "Asia/Shanghai",
+  "fetched_at": "2026-11-27T12:46:50+08:00",
+  "source": "arXiv API (export.arxiv.org)",
+  "source_query": "arXiv API：cs.RO，以及标题或摘要命中同一组关键词的 cs.CV / cs.LG。关键词覆盖四足与腿式操作、移动操作、抓取、全身控制、视觉伺服、手眼标定、模仿学习、diffusion policy、VLA、遥操作、sim2real。只保留发布落在回溯窗口内、且没有出现在更早 data/arxiv_raw 文件中的条目。本文件是未解读候选，不是每日解读。",
+  "api_query": "(submittedDate:[202611200446 TO 202611270446]) AND (cat:cs.RO OR cat:cs.CV OR cat:cs.LG) AND (all:quadruped OR all:quadrupedal OR all:\"legged manipulation\" OR all:\"legged manipulator\" OR all:\"loco-manipulation\" OR all:locomanipulation OR all:\"loco manipulation\" OR all:\"mobile manipulation\" OR all:\"mobile manipulator\" OR all:\"whole-body control\" OR all:\"whole body control\" OR all:\"visual servoing\" OR all:\"visual servo\" OR all:\"hand-eye\" OR all:\"hand eye calibration\" OR all:\"imitation learning\" OR all:\"diffusion policy\" OR all:\"vision-language-action\" OR all:\"vision language action\" OR all:VLA OR all:teleoperation OR all:\"tele-operation\" OR all:sim2real OR all:\"sim-to-real\" OR all:\"sim to real\" OR all:\"robotic grasping\" OR all:\"grasp detection\" OR all:\"object grasping\" OR all:\"grasp pose\")",
+  "window_start": "2026-11-20T12:46:50+08:00",
+  "window_end": "2026-11-27T12:46:50+08:00",
+  "lookback_days": 7,
+  "status": "uninterpreted_candidates",
+  "count": 0,
+  "items": []
+}
